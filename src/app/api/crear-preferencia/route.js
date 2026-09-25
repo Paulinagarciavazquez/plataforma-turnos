@@ -54,6 +54,12 @@ export async function POST(request) {
           failure: `${origin}/${slug}?pago=fallo&reserva=${reservaId}`,
           pending: `${origin}/${slug}?pago=pendiente&reserva=${reservaId}`,
         },
+        // Sin esto, Mercado Pago no redirige solo de vuelta al sitio: deja
+        // a la clienta en su propia pantalla con un botón "Volver al sitio"
+        // para tocar a mano. auto_return exige que back_urls sean https,
+        // por eso no daba error en local (localhost es http) pero tampoco
+        // redirigía -- ahora que estamos en un dominio https real, funciona.
+        auto_return: "approved",
       },
     });
 
