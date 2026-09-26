@@ -494,7 +494,9 @@ export default function SkinPilotoByOlivia({
                 {enviandoReserva ? "Confirmando..." : "Pagar seña y confirmar"}
               </button>
               <p className="bo-subtitulo" style={{ textAlign: "center" }}>
-                Pago seguro procesado por Mercado Pago
+                {datosNegocio.modo_demo
+                  ? "Es una demo: el pago se simula, no se cobra nada real."
+                  : "Pago seguro procesado por Mercado Pago"}
               </p>
             </form>
           </main>

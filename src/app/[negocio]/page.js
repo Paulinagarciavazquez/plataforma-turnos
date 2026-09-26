@@ -471,8 +471,15 @@ export default function ReservaNegocio({ params }) {
 
   if (!datosNegocio) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4 text-center">
-        <p>No encontramos este negocio. Revisá el link e intentá de nuevo.</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
+        <h1 className="text-2xl font-semibold">No encontramos este negocio</h1>
+        <p className="max-w-sm text-sm text-gray-500">
+          Revisá que el link esté completo y bien escrito. Si lo copiaste de otro lado, puede
+          que tenga un espacio de más o esté cortado.
+        </p>
+        <a href="/" className="mt-2 text-sm font-medium underline underline-offset-4">
+          Volver al inicio
+        </a>
       </main>
     );
   }
