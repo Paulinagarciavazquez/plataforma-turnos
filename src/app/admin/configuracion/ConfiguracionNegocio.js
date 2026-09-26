@@ -204,7 +204,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     <div className="space-y-8 max-w-lg">
       <form onSubmit={guardarCambios} className="space-y-8">
         <section>
-          <h2 className="text-lg font-semibold mb-3">Identidad visual</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Identidad visual</h2>
 
           <label className="block text-sm mb-4">
             Texto de bienvenida
@@ -213,7 +213,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               onChange={(e) => setTextoBienvenida(e.target.value)}
               placeholder="Ej: Reservá tu turno en un par de clics."
               rows={3}
-              className="border rounded px-3 py-2 w-full mt-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
             />
           </label>
 
@@ -225,13 +225,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                   type="color"
                   value={colorPrimario}
                   onChange={(e) => setColorPrimario(e.target.value)}
-                  className="h-10 w-12 border rounded shrink-0"
+                  className="h-10 w-12 border border-violet-200 rounded-xl shrink-0"
                 />
                 <input
                   type="text"
                   value={colorPrimario}
                   onChange={(e) => setColorPrimario(e.target.value)}
-                  className="border rounded px-3 py-2 w-full"
+                  className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                 />
               </div>
             </label>
@@ -242,13 +242,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                   type="color"
                   value={colorSecundario}
                   onChange={(e) => setColorSecundario(e.target.value)}
-                  className="h-10 w-12 border rounded shrink-0"
+                  className="h-10 w-12 border border-violet-200 rounded-xl shrink-0"
                 />
                 <input
                   type="text"
                   value={colorSecundario}
                   onChange={(e) => setColorSecundario(e.target.value)}
-                  className="border rounded px-3 py-2 w-full"
+                  className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                 />
               </div>
             </label>
@@ -261,7 +261,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder="https://..."
-              className="border rounded px-3 py-2 w-full mt-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
             />
           </label>
           {logoUrl && (
@@ -275,7 +275,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Horario de atención</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Horario de atención</h2>
 
           <div className="flex gap-4 mb-4">
             <label className="flex-1 text-sm">
@@ -284,7 +284,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                 type="time"
                 value={horarioApertura}
                 onChange={(e) => setHorarioApertura(e.target.value)}
-                className="border rounded px-3 py-2 w-full mt-1"
+                className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
               />
             </label>
             <label className="flex-1 text-sm">
@@ -293,7 +293,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                 type="time"
                 value={horarioCierre}
                 onChange={(e) => setHorarioCierre(e.target.value)}
-                className="border rounded px-3 py-2 w-full mt-1"
+                className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
               />
             </label>
           </div>
@@ -314,7 +314,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-3">Seña</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Seña</h2>
 
           <div className="flex gap-4 mb-3 text-sm">
             <label className="flex items-center gap-1">
@@ -342,12 +342,12 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
             placeholder={tipoSena === "porcentaje" ? "Ej: 30 (%)" : "Ej: 2000 ($)"}
             value={montoSena}
             onChange={(e) => setMontoSena(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold mb-1">Notificaciones</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Notificaciones</h2>
           <p className="text-sm text-gray-500 mb-3">
             A este email te avisamos cada vez que se confirma un turno pagado.
           </p>
@@ -358,7 +358,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               value={emailNotificaciones}
               onChange={(e) => setEmailNotificaciones(e.target.value)}
               placeholder="tuemail@ejemplo.com"
-              className="border rounded px-3 py-2 w-full mt-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
             />
           </label>
         </section>
@@ -372,14 +372,14 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         <button
           type="submit"
           disabled={guardando}
-          className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+          className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
         >
           {guardando ? "Guardando..." : "Guardar cambios"}
         </button>
       </form>
 
       <section className="border-t pt-8">
-        <h2 className="text-lg font-semibold mb-1">Mercado Pago</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Mercado Pago</h2>
         <p className="text-sm text-gray-500 mb-3">
           {cargandoPago
             ? "Verificando..."
@@ -393,12 +393,12 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
             placeholder="Access Token (TEST-... o APP_USR-...)"
             value={mercadopagoAccessToken}
             onChange={(e) => setMercadopagoAccessToken(e.target.value)}
-            className="border rounded px-3 py-2 flex-1"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
           />
           <button
             type="submit"
             disabled={guardandoPago}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {guardandoPago ? "Guardando..." : "Guardar"}
           </button>
@@ -437,12 +437,12 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               placeholder="Clave secreta del webhook"
               value={mercadopagoWebhookSecret}
               onChange={(e) => setMercadopagoWebhookSecret(e.target.value)}
-              className="border rounded px-3 py-2 flex-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
             />
             <button
               type="submit"
               disabled={guardandoWebhook}
-              className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+              className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
             >
               {guardandoWebhook ? "Guardando..." : "Guardar"}
             </button>

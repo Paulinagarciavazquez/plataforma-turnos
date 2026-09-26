@@ -122,7 +122,7 @@ export default function GestionAusencias({ negocio }) {
   return (
     <div className="space-y-8 max-w-lg">
       <section>
-        <h2 className="text-lg font-semibold mb-3">Ausencias cargadas</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Ausencias cargadas</h2>
 
         {ausencias.length === 0 ? (
           <p className="text-sm text-gray-500 mb-4">
@@ -135,7 +135,7 @@ export default function GestionAusencias({ negocio }) {
             {ausencias.map((a) => (
               <li
                 key={a.id}
-                className="flex items-center justify-between border rounded px-3 py-2"
+                className="flex items-center justify-between border border-violet-200 bg-white rounded-xl px-3 py-2"
               >
                 <span className="text-sm">
                   {a.profesionales?.nombre} — {a.fecha}
@@ -152,13 +152,13 @@ export default function GestionAusencias({ negocio }) {
           </ul>
         )}
 
-        <form onSubmit={agregarAusencia} className="space-y-2 border rounded p-3">
+        <form onSubmit={agregarAusencia} className="space-y-2 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40">
           <p className="font-medium text-sm mb-1">Cargar ausencia nueva</p>
 
           <select
             value={profesionalId}
             onChange={(e) => setProfesionalId(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           >
             <option value="">Elegí profesional</option>
             {profesionales.map((p) => (
@@ -173,7 +173,7 @@ export default function GestionAusencias({ negocio }) {
             min={hoyIso()}
             value={fecha}
             onChange={(e) => setFecha(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
 
           <input
@@ -181,13 +181,13 @@ export default function GestionAusencias({ negocio }) {
             placeholder="Motivo (opcional, ej: vacaciones)"
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
 
           <button
             type="submit"
             disabled={guardando}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {guardando ? "Guardando..." : "Cargar ausencia"}
           </button>

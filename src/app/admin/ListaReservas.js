@@ -203,13 +203,13 @@ export default function ListaReservas({ negocio }) {
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="mb-3 text-lg font-medium">Reservas</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Reservas</h2>
 
         <div className="mb-4 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setFechaAgenda((f) => sumarDias(f, -1))}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="rounded-full border border-violet-200 px-4 py-1.5 text-sm text-violet-700 hover:bg-violet-50 transition"
           >
             ← Anterior
           </button>
@@ -230,7 +230,7 @@ export default function ListaReservas({ negocio }) {
           <button
             type="button"
             onClick={() => setFechaAgenda((f) => sumarDias(f, 1))}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+            className="rounded-full border border-violet-200 px-4 py-1.5 text-sm text-violet-700 hover:bg-violet-50 transition"
           >
             Siguiente →
           </button>
@@ -247,7 +247,7 @@ export default function ListaReservas({ negocio }) {
             </p>
             <div className="flex flex-col gap-3">
               {reservasDelDia.map((reserva) => (
-                <div key={reserva.id} className="rounded-lg border px-4 py-3">
+                <div key={reserva.id} className="rounded-xl border border-violet-100 bg-white px-4 py-3 shadow-sm shadow-violet-100/40">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="font-medium">
                       {reserva.bloqueo_manual ? `Bloqueado: ${reserva.nombre_cliente}` : reserva.nombre_cliente}
@@ -292,17 +292,17 @@ export default function ListaReservas({ negocio }) {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-medium">Bloquear un horario</h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Bloquear un horario</h2>
         <p className="text-sm text-gray-500 mb-3">
           Usalo cuando ocupaste un turno por otro medio (WhatsApp, en el local, etc.) y
           querés que deje de aparecer disponible para reservar online.
         </p>
 
-        <form onSubmit={bloquearHorario} className="space-y-3 border rounded p-3 max-w-md">
+        <form onSubmit={bloquearHorario} className="space-y-3 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40 max-w-md">
           <select
             value={profesionalId}
             onChange={(e) => setProfesionalId(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           >
             <option value="">Elegí profesional</option>
             {profesionales.map((p) => (
@@ -315,7 +315,7 @@ export default function ListaReservas({ negocio }) {
           <select
             value={fechaBloqueo}
             onChange={(e) => setFechaBloqueo(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
             disabled={!profesionalId}
           >
             <option value="">Elegí día</option>
@@ -332,13 +332,13 @@ export default function ListaReservas({ negocio }) {
             value={duracionBloqueo}
             onChange={(e) => setDuracionBloqueo(e.target.value)}
             min="1"
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
 
           <select
             value={horaBloqueo}
             onChange={(e) => setHoraBloqueo(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
             disabled={!profesionalId || !fechaBloqueo || cargandoHorarios}
           >
             <option value="">
@@ -356,13 +356,13 @@ export default function ListaReservas({ negocio }) {
             placeholder="Motivo (opcional, ej: reservado por Instagram)"
             value={motivoBloqueo}
             onChange={(e) => setMotivoBloqueo(e.target.value)}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
 
           <button
             type="submit"
             disabled={bloqueando}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {bloqueando ? "Bloqueando..." : "Bloquear horario"}
           </button>

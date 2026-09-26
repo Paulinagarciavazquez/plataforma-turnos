@@ -133,7 +133,7 @@ export default function GestionSucursales({ negocio }) {
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-lg font-semibold mb-1">Sucursales</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Sucursales</h2>
         <p className="text-sm text-gray-500 mb-3">
           {sucursales.length <= 1
             ? "Con una sola sucursal (o ninguna), tus clientes no ven el paso de elegir sucursal al reservar. En cuanto cargues una segunda, ese paso aparece automáticamente."
@@ -145,7 +145,7 @@ export default function GestionSucursales({ negocio }) {
             <li className="text-gray-500 text-sm">Todavía no hay sucursales cargadas.</li>
           )}
           {sucursales.map((s) => (
-            <li key={s.id} className="border rounded px-3 py-3">
+            <li key={s.id} className="border border-violet-100 bg-white rounded-xl px-3 py-3 shadow-sm shadow-violet-100/40">
               {edicionId === s.id ? (
                 <form onSubmit={guardarEdicion} className="space-y-2">
                   <input
@@ -155,7 +155,7 @@ export default function GestionSucursales({ negocio }) {
                     onChange={(e) =>
                       setEdicionSucursal({ ...edicionSucursal, nombre: e.target.value })
                     }
-                    className="border rounded px-3 py-2 w-full"
+                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                   />
                   <input
                     type="text"
@@ -164,13 +164,13 @@ export default function GestionSucursales({ negocio }) {
                     onChange={(e) =>
                       setEdicionSucursal({ ...edicionSucursal, direccion: e.target.value })
                     }
-                    className="border rounded px-3 py-2 w-full"
+                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                   />
                   <div className="flex gap-3">
                     <button
                       type="submit"
                       disabled={guardandoEdicion}
-                      className="bg-black text-white rounded px-3 py-1.5 text-sm disabled:opacity-50"
+                      className="bg-violet-600 text-white rounded-full px-4 py-2 text-sm shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
                     >
                       {guardandoEdicion ? "Guardando..." : "Guardar"}
                     </button>
@@ -206,26 +206,26 @@ export default function GestionSucursales({ negocio }) {
           ))}
         </ul>
 
-        <form onSubmit={agregarSucursal} className="space-y-2 border rounded p-3">
+        <form onSubmit={agregarSucursal} className="space-y-2 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40">
           <p className="font-medium text-sm mb-1">Agregar sucursal nueva</p>
           <input
             type="text"
             placeholder="Nombre (ej: Sucursal Centro)"
             value={nuevaSucursal.nombre}
             onChange={(e) => setNuevaSucursal({ ...nuevaSucursal, nombre: e.target.value })}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
           <input
             type="text"
             placeholder="Dirección (opcional)"
             value={nuevaSucursal.direccion}
             onChange={(e) => setNuevaSucursal({ ...nuevaSucursal, direccion: e.target.value })}
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
           <button
             type="submit"
             disabled={guardandoSucursal}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {guardandoSucursal ? "Guardando..." : "Agregar sucursal"}
           </button>

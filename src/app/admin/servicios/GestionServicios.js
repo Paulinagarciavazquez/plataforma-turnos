@@ -315,7 +315,7 @@ export default function GestionServicios({ negocio }) {
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="text-lg font-semibold mb-3">Profesionales</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Profesionales</h2>
 
         <ul className="mb-4 space-y-1">
           {profesionales.length === 0 && (
@@ -326,7 +326,7 @@ export default function GestionServicios({ negocio }) {
           {profesionales.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between border rounded px-3 py-2"
+              className="flex items-center justify-between border border-violet-200 bg-white rounded-xl px-3 py-2"
             >
               <div className="flex flex-1 items-center gap-3">
                 <span>{p.nombre}</span>
@@ -334,7 +334,7 @@ export default function GestionServicios({ negocio }) {
                   <select
                     value={p.sucursal_id || ""}
                     onChange={(e) => asignarSucursalProfesional(p.id, e.target.value)}
-                    className="border rounded px-2 py-1 text-xs text-gray-600"
+                    className="border border-violet-200 bg-white rounded-full px-3 py-1 text-xs text-gray-600 focus:border-violet-400 focus:outline-none transition"
                   >
                     <option value="">Todas las sucursales</option>
                     {sucursales.map((s) => (
@@ -361,12 +361,12 @@ export default function GestionServicios({ negocio }) {
             placeholder="Nombre del profesional"
             value={nombreProfesional}
             onChange={(e) => setNombreProfesional(e.target.value)}
-            className="border rounded px-3 py-2 flex-1"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
           />
           <button
             type="submit"
             disabled={guardandoProfesional}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {guardandoProfesional ? "Guardando..." : "Agregar"}
           </button>
@@ -374,7 +374,7 @@ export default function GestionServicios({ negocio }) {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Servicios</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Servicios</h2>
 
         <div className="space-y-4 mb-6">
           {servicios.length === 0 && (
@@ -383,7 +383,7 @@ export default function GestionServicios({ negocio }) {
             </p>
           )}
           {servicios.map((s) => (
-            <div key={s.id} className="border rounded px-3 py-3">
+            <div key={s.id} className="border border-violet-100 bg-white rounded-xl px-3 py-3 shadow-sm shadow-violet-100/40">
               {edicionServicioId === s.id ? (
                 <form onSubmit={guardarEdicionServicio} className="space-y-2 mb-2">
                   <input
@@ -393,7 +393,7 @@ export default function GestionServicios({ negocio }) {
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, nombre: e.target.value })
                     }
-                    className="border rounded px-3 py-2 w-full"
+                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                   />
                   <input
                     type="text"
@@ -402,7 +402,7 @@ export default function GestionServicios({ negocio }) {
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, descripcion: e.target.value })
                     }
-                    className="border rounded px-3 py-2 w-full"
+                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                   />
                   <input
                     type="text"
@@ -411,7 +411,7 @@ export default function GestionServicios({ negocio }) {
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, categoria: e.target.value })
                     }
-                    className="border rounded px-3 py-2 w-full"
+                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
                   />
                   <div className="flex gap-2">
                     <input
@@ -421,7 +421,7 @@ export default function GestionServicios({ negocio }) {
                       onChange={(e) =>
                         setEdicionServicio({ ...edicionServicio, precio: e.target.value })
                       }
-                      className="border rounded px-3 py-2 flex-1"
+                      className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
                     />
                     <input
                       type="number"
@@ -433,14 +433,14 @@ export default function GestionServicios({ negocio }) {
                           duracion_minutos: e.target.value,
                         })
                       }
-                      className="border rounded px-3 py-2 flex-1"
+                      className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="submit"
                       disabled={guardandoEdicionServicio}
-                      className="bg-black text-white rounded px-3 py-1.5 text-sm disabled:opacity-50"
+                      className="bg-violet-600 text-white rounded-full px-4 py-2 text-sm shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
                     >
                       {guardandoEdicionServicio ? "Guardando..." : "Guardar"}
                     </button>
@@ -507,7 +507,7 @@ export default function GestionServicios({ negocio }) {
           ))}
         </div>
 
-        <form onSubmit={agregarServicio} className="space-y-2 border rounded p-3">
+        <form onSubmit={agregarServicio} className="space-y-2 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40">
           <p className="font-medium text-sm mb-1">Agregar servicio nuevo</p>
           <input
             type="text"
@@ -516,7 +516,7 @@ export default function GestionServicios({ negocio }) {
             onChange={(e) =>
               setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })
             }
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
           <input
             type="text"
@@ -525,7 +525,7 @@ export default function GestionServicios({ negocio }) {
             onChange={(e) =>
               setNuevoServicio({ ...nuevoServicio, descripcion: e.target.value })
             }
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
           <input
             type="text"
@@ -534,7 +534,7 @@ export default function GestionServicios({ negocio }) {
             onChange={(e) =>
               setNuevoServicio({ ...nuevoServicio, categoria: e.target.value })
             }
-            className="border rounded px-3 py-2 w-full"
+            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
           />
           <div className="flex gap-2">
             <input
@@ -544,7 +544,7 @@ export default function GestionServicios({ negocio }) {
               onChange={(e) =>
                 setNuevoServicio({ ...nuevoServicio, precio: e.target.value })
               }
-              className="border rounded px-3 py-2 flex-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
             />
             <input
               type="number"
@@ -556,13 +556,13 @@ export default function GestionServicios({ negocio }) {
                   duracion_minutos: e.target.value,
                 })
               }
-              className="border rounded px-3 py-2 flex-1"
+              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
             />
           </div>
           <button
             type="submit"
             disabled={guardandoServicio}
-            className="bg-black text-white rounded px-4 py-2 disabled:opacity-50"
+            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
           >
             {guardandoServicio ? "Guardando..." : "Agregar servicio"}
           </button>
