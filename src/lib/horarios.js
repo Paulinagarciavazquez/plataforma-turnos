@@ -14,7 +14,8 @@ const DIAS_A_MOSTRAR = 21; // cuántos días hacia adelante ofrecemos para elegi
 
 const NOMBRES_DIA = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
-function aIso(fecha) {
+// Exportada además para el panel de admin (vista de reservas por día).
+export function aIso(fecha) {
   const y = fecha.getFullYear();
   const m = String(fecha.getMonth() + 1).padStart(2, "0");
   const d = String(fecha.getDate()).padStart(2, "0");

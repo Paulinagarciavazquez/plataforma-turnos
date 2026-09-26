@@ -7,6 +7,7 @@ import {
   generarHorariosInicio,
   filtrarHorariosLibres,
   horaFin,
+  aIso,
 } from "../../lib/horarios";
 
 const ETIQUETAS_ESTADO = {
@@ -17,11 +18,37 @@ const ETIQUETAS_ESTADO = {
 
 const formatearPrecio = (precio) => `$${Number(precio).toLocaleString("es-AR")}`;
 
+const NOMBRES_DIA_LARGO = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+const NOMBRES_MES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+// Encabezado bien legible para la vista de agenda por día, ej: "Lunes 28 de septiembre".
+function formatearFechaLarga(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  return `${NOMBRES_DIA_LARGO[fecha.getDay()]} ${d} de ${NOMBRES_MES[m - 1]}`;
+}
+
+function sumarDias(iso, delta) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  fecha.setDate(fecha.getDate() + delta);
+  return aIso(fecha);
+}
+
 export default function ListaReservas({ negocio }) {
   const [reservas, setReservas] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [recargar, setRecargar] = useState(0);
+
+  // Vista de agenda: qué día se está mostrando en la sección "Reservas" de
+  // más abajo. Arranca en hoy; navegar no vuelve a pedir datos al servidor,
+  // solo filtra "reservas" (que ya tiene todo cargado) por fecha.
+  const [fechaAgenda, setFechaAgenda] = useState(() => aIso(new Date()));
 
   // ---- Bloquear un horario manualmente ----
   const diasDisponibles = generarProximosDias(negocio.dias_atencion);
@@ -170,58 +197,97 @@ export default function ListaReservas({ negocio }) {
     recargarDatos();
   }
 
+  const hoyIso = aIso(new Date());
+  const reservasDelDia = reservas.filter((reserva) => reserva.fecha === fechaAgenda);
+
   return (
     <div className="space-y-10">
       <section>
         <h2 className="mb-3 text-lg font-medium">Reservas</h2>
 
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setFechaAgenda((f) => sumarDias(f, -1))}
+            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+          >
+            ← Anterior
+          </button>
+
+          <div className="text-center">
+            <p className="font-medium">{formatearFechaLarga(fechaAgenda)}</p>
+            {fechaAgenda !== hoyIso && (
+              <button
+                type="button"
+                onClick={() => setFechaAgenda(hoyIso)}
+                className="text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700"
+              >
+                Volver a hoy
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFechaAgenda((f) => sumarDias(f, 1))}
+            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50"
+          >
+            Siguiente →
+          </button>
+        </div>
+
         {cargando ? (
           <p className="text-sm text-gray-500">Cargando reservas...</p>
-        ) : reservas.length === 0 ? (
-          <p className="text-sm text-gray-500">Todavía no tenés reservas.</p>
+        ) : reservasDelDia.length === 0 ? (
+          <p className="text-sm text-gray-500">No hay turnos para este día.</p>
         ) : (
-          <div className="flex flex-col gap-3">
-            {reservas.map((reserva) => (
-              <div key={reserva.id} className="rounded-lg border px-4 py-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-medium">
-                    {reserva.bloqueo_manual ? `Bloqueado: ${reserva.nombre_cliente}` : reserva.nombre_cliente}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {ETIQUETAS_ESTADO[reserva.estado] || reserva.estado}
-                  </span>
+          <>
+            <p className="mb-3 text-sm text-gray-500">
+              {reservasDelDia.length} {reservasDelDia.length === 1 ? "turno" : "turnos"}
+            </p>
+            <div className="flex flex-col gap-3">
+              {reservasDelDia.map((reserva) => (
+                <div key={reserva.id} className="rounded-lg border px-4 py-3">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium">
+                      {reserva.bloqueo_manual ? `Bloqueado: ${reserva.nombre_cliente}` : reserva.nombre_cliente}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {ETIQUETAS_ESTADO[reserva.estado] || reserva.estado}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {reserva.servicios?.nombre}
+                    {reserva.profesionales?.nombre ? ` con ${reserva.profesionales.nombre}` : ""}
+                    {reserva.sucursales?.nombre ? ` — ${reserva.sucursales.nombre}` : ""}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {reserva.hora?.slice(0, 5)}
+                    {reserva.duracion_minutos
+                      ? ` a ${horaFin(reserva.hora?.slice(0, 5), reserva.duracion_minutos)}`
+                      : ""}
+                  </p>
+                  {!reserva.bloqueo_manual && (
+                    <>
+                      <p className="text-sm text-gray-600">
+                        Tel: {reserva.telefono_cliente || "-"}
+                        {reserva.email_cliente ? ` · ${reserva.email_cliente}` : ""}
+                      </p>
+                      <p className="text-sm font-medium">Seña: {formatearPrecio(reserva.monto_sena || 0)}</p>
+                    </>
+                  )}
+                  {reserva.estado !== "cancelada" && (
+                    <button
+                      onClick={() => cancelarReserva(reserva.id)}
+                      className="mt-2 text-sm text-red-600 hover:underline"
+                    >
+                      Cancelar
+                    </button>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600">
-                  {reserva.servicios?.nombre}
-                  {reserva.profesionales?.nombre ? ` con ${reserva.profesionales.nombre}` : ""}
-                  {reserva.sucursales?.nombre ? ` — ${reserva.sucursales.nombre}` : ""}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {reserva.fecha} de {reserva.hora?.slice(0, 5)}
-                  {reserva.duracion_minutos
-                    ? ` a ${horaFin(reserva.hora?.slice(0, 5), reserva.duracion_minutos)}`
-                    : ""}
-                </p>
-                {!reserva.bloqueo_manual && (
-                  <>
-                    <p className="text-sm text-gray-600">
-                      Tel: {reserva.telefono_cliente || "-"}
-                      {reserva.email_cliente ? ` · ${reserva.email_cliente}` : ""}
-                    </p>
-                    <p className="text-sm font-medium">Seña: {formatearPrecio(reserva.monto_sena || 0)}</p>
-                  </>
-                )}
-                {reserva.estado !== "cancelada" && (
-                  <button
-                    onClick={() => cancelarReserva(reserva.id)}
-                    className="mt-2 text-sm text-red-600 hover:underline"
-                  >
-                    Cancelar
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         )}
       </section>
 
