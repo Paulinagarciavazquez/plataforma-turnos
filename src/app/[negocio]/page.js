@@ -285,6 +285,37 @@ export default function ReservaNegocio({ params }) {
       return;
     }
 
+    // Negocios en "modo demo" (por ahora, el piloto): en vez de ir a
+    // Mercado Pago de verdad, simulamos la aprobación al toque para que
+    // cualquiera pueda recorrer el flujo completo sin necesitar una cuenta
+    // de prueba. El backend vuelve a chequear "modo_demo" antes de confirmar
+    // nada, así que esto nunca salta un cobro real de un negocio real.
+    if (datosNegocio.modo_demo) {
+      try {
+        const respuestaDemo = await fetch("/api/simular-pago-demo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reservaId }),
+        });
+
+        const datosDemo = await respuestaDemo.json();
+        setEnviandoReserva(false);
+
+        if (!respuestaDemo.ok) {
+          setErrorReserva(datosDemo.error || "No pudimos simular el pago. Probá de nuevo.");
+          return;
+        }
+
+        setReservaConfirmada(datosDemo);
+        setPantallaActual("confirmacion");
+      } catch (errorDemo) {
+        setEnviandoReserva(false);
+        console.error("Error simulando el pago demo:", errorDemo);
+        setErrorReserva("No pudimos simular el pago. Probá de nuevo.");
+      }
+      return;
+    }
+
     // La reserva ya quedó guardada como "pendiente_pago". Ahora le pedimos al
     // servidor que cree la preferencia de pago en la cuenta de Mercado Pago
     // de ESTE negocio (no la nuestra) y redirigimos al cliente a pagar ahí.
@@ -531,6 +562,11 @@ export default function ReservaNegocio({ params }) {
 
   return (
     <main className="min-h-screen flex flex-col">
+      {datosNegocio.modo_demo && (
+        <div className="bg-black text-white text-center text-xs font-medium py-2 px-4">
+          Estás viendo una demo — no se cobra plata real, el pago se simula automáticamente.
+        </div>
+      )}
       {pantallaActual === "landing" && (
         <section className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
           {datosNegocio.logo_url ? (

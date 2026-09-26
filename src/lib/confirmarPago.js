@@ -154,3 +154,71 @@ export async function confirmarPagoDeReserva({ reservaId, paymentId }) {
 
   return { status: 200, body: { ...resumenBase, estadoPago } };
 }
+
+// Confirma una reserva de "modo demo" SIN pasar por Mercado Pago: simula
+// una seña aprobada al toque, para que cualquiera pueda chusmear el flujo
+// completo del piloto sin necesitar una cuenta de prueba de Mercado Pago
+// (que solo tiene la propia Paulina). Reutiliza el mismo aviso por email
+// que un pago real, para que la demo se sienta igual de completa.
+//
+// Seguridad: el negocio en cuestión tiene que tener "modo_demo = true" en
+// la base -- eso lo decide únicamente quien administra el negocio desde
+// Supabase, nunca el cliente que llama a esta función. Así, aunque alguien
+// intente pegarle a este mismo endpoint para un negocio real, no hay forma
+// de saltear un cobro de verdad: se corta acá.
+export async function confirmarReservaDemo({ reservaId }) {
+  if (!reservaId) {
+    return { status: 400, body: { error: "Falta el identificador de la reserva." } };
+  }
+
+  const { data: reserva, error: errorReserva } = await supabaseAdmin
+    .from("reservas")
+    .select(
+      "id, negocio_id, fecha, hora, monto_sena, estado, nombre_cliente, telefono_cliente, servicios(nombre), sucursales(nombre), profesionales(nombre), negocios(nombre, email_notificaciones, modo_demo)"
+    )
+    .eq("id", reservaId)
+    .maybeSingle();
+
+  if (errorReserva) {
+    console.error("Error leyendo la reserva (modo demo):", errorReserva);
+    return { status: 500, body: { error: "No pudimos simular el pago." } };
+  }
+
+  if (!reserva) {
+    return { status: 404, body: { error: "No encontramos esa reserva." } };
+  }
+
+  if (!reserva.negocios?.modo_demo) {
+    console.error("Intento de simular pago demo en un negocio que no está en modo demo:", reserva.negocio_id);
+    return { status: 400, body: { error: "Este negocio no está en modo demo." } };
+  }
+
+  const resumenBase = {
+    negocioId: reserva.negocio_id,
+    reservaId: reserva.id,
+    servicio: reserva.servicios,
+    sucursal: reserva.sucursales,
+    profesional: reserva.profesionales,
+    fecha: reserva.fecha,
+    hora: reserva.hora,
+    montoSena: reserva.monto_sena,
+    nombreNegocio: reserva.negocios?.nombre,
+  };
+
+  if (reserva.estado === "confirmada") {
+    return { status: 200, body: { ...resumenBase, estadoPago: "aprobado" } };
+  }
+
+  const { error: errorUpdate } = await supabaseAdmin
+    .from("reservas")
+    .update({ estado: "confirmada", id_pago_mercadopago: "demo" })
+    .eq("id", reservaId);
+
+  if (errorUpdate) {
+    console.error("Error actualizando la reserva demo:", errorUpdate);
+  }
+
+  await avisarNuevoTurno(reserva);
+
+  return { status: 200, body: { ...resumenBase, estadoPago: "aprobado" } };
+}

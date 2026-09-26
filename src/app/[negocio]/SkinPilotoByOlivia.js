@@ -243,12 +243,28 @@ export default function SkinPilotoByOlivia({
         .piel-by-olivia .bo-sena-total { display: flex; align-items: baseline; justify-content: space-between; padding-top: 18px; margin-top: 6px; border-top: 1.5px solid rgba(43,17,22,0.15); }
         .piel-by-olivia .bo-notice { max-width: 460px; margin: 20px auto 0; padding: 15px 20px; border-radius: 12px; background: rgba(137,6,32,0.05); font-size: 13px; color: rgba(43,17,22,0.65); text-align: center; }
         .piel-by-olivia .bo-confirm-actions { max-width: 460px; margin: 24px auto 0; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 24px 40px; }
+        .piel-by-olivia .bo-demo-banner {
+          background: var(--bo-ink);
+          color: var(--bo-cream);
+          text-align: center;
+          font-family: 'Jost', sans-serif;
+          font-size: 12px;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+          padding: 9px 16px;
+        }
         @media (max-width: 640px) {
           .piel-by-olivia .bo-hero-titulo { font-size: 44px; }
           .piel-by-olivia .bo-pro-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .piel-by-olivia .bo-step-mark { display: none; }
         }
       `}</style>
+
+      {datosNegocio.modo_demo && (
+        <div className="bo-demo-banner">
+          Estás viendo una demo — no se cobra plata real, el pago se simula automáticamente.
+        </div>
+      )}
 
       {pantallaActual === "landing" && (
         <section className="bo-hero">
