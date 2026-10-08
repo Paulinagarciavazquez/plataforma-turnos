@@ -1,12 +1,22 @@
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { armarComprobanteCliente } from "@/lib/emails/comprobanteCliente";
+import { escaparHtml, formatearPrecio } from "@/lib/emails/datosDelTurno";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-function formatearPrecio(precio) {
-  return `$${Number(precio || 0).toLocaleString("es-AR")}`;
-}
+// Dirección desde la que salen los mails. Mientras no haya un dominio
+// verificado en Resend, es la de pruebas (que solo puede mandarle a la
+// dirección con la que se creó la cuenta de Resend). Cuando se verifique el
+// dominio de la plataforma, alcanza con cargar EMAIL_REMITENTE en Vercel
+// (ej. turnos@agendaestudio.com.ar) — no hace falta tocar código.
+const REMITENTE = process.env.EMAIL_REMITENTE || "onboarding@resend.dev";
+
+// Todo lo que necesitan los mails (aviso a la dueña + comprobante al
+// cliente) sobre una reserva.
+const CAMPOS_RESERVA =
+  "id, negocio_id, fecha, hora, duracion_minutos, monto_sena, estado, nombre_cliente, telefono_cliente, email_cliente, servicios(nombre, precio), sucursales(nombre, direccion), profesionales(nombre), negocios(nombre, slug, email_notificaciones, color_primario, modo_demo)";
 
 // Le avisa por email a la dueña del negocio que se confirmó (y pagó) un
 // turno nuevo. Nunca rompe la confirmación del pago si falla: es un aviso,
@@ -17,24 +27,53 @@ async function avisarNuevoTurno(reserva) {
 
   try {
     await resend.emails.send({
-      from: "Turnos <onboarding@resend.dev>",
+      from: `Turnos <${REMITENTE}>`,
       to: [emailDestino],
       subject: `Nuevo turno confirmado: ${reserva.servicios?.nombre || "servicio"} - ${reserva.fecha}`,
       html: `
         <h2>¡Tenés un turno nuevo confirmado!</h2>
-        <p><strong>Servicio:</strong> ${reserva.servicios?.nombre || "-"}</p>
-        ${reserva.sucursales ? `<p><strong>Sucursal:</strong> ${reserva.sucursales.nombre}</p>` : ""}
-        ${reserva.profesionales ? `<p><strong>Profesional:</strong> ${reserva.profesionales.nombre}</p>` : ""}
+        <p><strong>Servicio:</strong> ${escaparHtml(reserva.servicios?.nombre || "-")}</p>
+        ${reserva.sucursales ? `<p><strong>Sucursal:</strong> ${escaparHtml(reserva.sucursales.nombre)}</p>` : ""}
+        ${reserva.profesionales ? `<p><strong>Profesional:</strong> ${escaparHtml(reserva.profesionales.nombre)}</p>` : ""}
         <p><strong>Día y horario:</strong> ${reserva.fecha} · ${reserva.hora}</p>
         <p><strong>Seña pagada:</strong> ${formatearPrecio(reserva.monto_sena)}</p>
         <hr />
-        <p><strong>Cliente:</strong> ${reserva.nombre_cliente}</p>
-        <p><strong>Teléfono:</strong> ${reserva.telefono_cliente || "-"}</p>
+        <p><strong>Cliente:</strong> ${escaparHtml(reserva.nombre_cliente)}</p>
+        <p><strong>Teléfono:</strong> ${escaparHtml(reserva.telefono_cliente || "-")}</p>
+        ${reserva.email_cliente ? `<p><strong>Email:</strong> ${escaparHtml(reserva.email_cliente)}</p>` : ""}
       `,
     });
   } catch (errorEmail) {
     console.error("Error mandando el email de aviso de turno:", errorEmail);
   }
+}
+
+// Le manda al cliente el comprobante de su turno confirmado, con el diseño
+// del negocio (ver src/lib/emails/comprobanteCliente.js). Igual que el
+// aviso a la dueña: si falla, se loguea y la confirmación sigue su curso.
+// Si el cliente responde el mail, la respuesta le llega al negocio.
+async function mandarComprobanteCliente(reserva) {
+  if (!resend || !reserva.email_cliente) return;
+
+  try {
+    const { asunto, html } = armarComprobanteCliente(reserva);
+    const nombreRemitente = (reserva.negocios?.nombre || "Turnos").replace(/["<>]/g, "");
+    const { error } = await resend.emails.send({
+      from: `"${nombreRemitente}" <${REMITENTE}>`,
+      to: [reserva.email_cliente],
+      replyTo: reserva.negocios?.email_notificaciones || undefined,
+      subject: asunto,
+      html,
+    });
+    if (error) console.error("Resend rechazó el comprobante al cliente:", error);
+  } catch (errorEmail) {
+    console.error("Error mandando el comprobante al cliente:", errorEmail);
+  }
+}
+
+// Los dos mails que salen cuando un turno queda confirmado, en paralelo.
+async function mandarMailsDeTurnoConfirmado(reserva) {
+  await Promise.all([avisarNuevoTurno(reserva), mandarComprobanteCliente(reserva)]);
 }
 
 // Verifica, del lado del servidor, si el pago de una reserva se acreditó de
@@ -54,9 +93,7 @@ export async function confirmarPagoDeReserva({ reservaId, paymentId }) {
 
   const { data: reserva, error: errorReserva } = await supabaseAdmin
     .from("reservas")
-    .select(
-      "id, negocio_id, fecha, hora, monto_sena, estado, nombre_cliente, telefono_cliente, servicios(nombre), sucursales(nombre), profesionales(nombre), negocios(nombre, email_notificaciones)"
-    )
+    .select(CAMPOS_RESERVA)
     .eq("id", reservaId)
     .maybeSingle();
 
@@ -149,7 +186,7 @@ export async function confirmarPagoDeReserva({ reservaId, paymentId }) {
   }
 
   if (nuevoEstado === "confirmada" && reserva.estado !== "confirmada") {
-    await avisarNuevoTurno(reserva);
+    await mandarMailsDeTurnoConfirmado(reserva);
   }
 
   return { status: 200, body: { ...resumenBase, estadoPago } };
@@ -173,9 +210,7 @@ export async function confirmarReservaDemo({ reservaId }) {
 
   const { data: reserva, error: errorReserva } = await supabaseAdmin
     .from("reservas")
-    .select(
-      "id, negocio_id, fecha, hora, monto_sena, estado, nombre_cliente, telefono_cliente, servicios(nombre), sucursales(nombre), profesionales(nombre), negocios(nombre, email_notificaciones, modo_demo)"
-    )
+    .select(CAMPOS_RESERVA)
     .eq("id", reservaId)
     .maybeSingle();
 
@@ -218,7 +253,7 @@ export async function confirmarReservaDemo({ reservaId }) {
     console.error("Error actualizando la reserva demo:", errorUpdate);
   }
 
-  await avisarNuevoTurno(reserva);
+  await mandarMailsDeTurnoConfirmado(reserva);
 
   return { status: 200, body: { ...resumenBase, estadoPago: "aprobado" } };
 }

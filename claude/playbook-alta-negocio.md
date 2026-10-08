@@ -4,14 +4,21 @@
 
 Cada negocio real nuevo es siempre una fila nueva en la tabla `negocios` de Supabase — nunca se edita ni se "convierte" el piloto (`unas-test`, mostrado como "by olivia"). El piloto queda permanente con `modo_demo = true`, como vidriera de portfolio; cada cliente nace con su propio `slug`, `modo_demo = false` (su valor por defecto) y sus propias credenciales reales de Mercado Pago.
 
+**Oferta (actualizado 08/10/2026):** $120.000 pago único + $25.000/mes, diseño a medida siempre incluido, online en 14 días (ver la landing de Agenda Estudio y `camino-a-lanzamiento.md`). Antes de usar este playbook con el primer cliente, revisar la checklist de la Parte 3 de `camino-a-lanzamiento.md` — hay funciones que promete la landing y todavía no existen.
+
 ## Paso 1 — Reunir información del cliente
-Antes de tocar nada, reunir del cliente:
+Antes de tocar nada, cobrar el pago de alta (o la parte acordada), firmar los términos simples y reunir del cliente:
 - Nombre del negocio y rubro (peluquería, uñas, estética, y a futuro odontología/kinesiología)
 - Sucursales, si tiene más de una
-- Servicios, con precio y duración de cada uno
-- Profesionales que atienden
+- Servicios, con precio, duración y categoría de cada uno
+- Profesionales que atienden, y qué servicios hace cada uno
 - Horario de atención
 - Qué monto o % quiere pedir de seña
+- Material para el diseño: logo, fotos, colores o referencias que le gusten, tono con el que habla su marca
+- Dominio que quiere (.com.ar) — verificar que esté libre en NIC Argentina
+- Email donde quiere recibir los avisos de turnos nuevos
+
+Los 14 días de entrega cuentan desde que llega todo este material.
 
 ## Paso 2 — Alta en Supabase
 Dar de alta:
@@ -29,19 +36,30 @@ El cliente (o Paulina por él, al principio) carga desde `/admin`: servicios, pr
 
 **Importante:** probablemente convenga que Paulina ayude a mano la primera vez — encontrar el Access Token y configurar el webhook en Mercado Pago es un paso técnico que un dueño de peluquería o salón de uñas típicamente no va a saber hacer solo. Este flujo ya quedó probado de punta a punta con el piloto.
 
-## Paso 5 — Identidad visual
-Como mínimo, campos genéricos desde el panel: colores, logo, texto de bienvenida.
+## Paso 5 — Diseño a medida
+Siempre incluido (decidido 08/10/2026): cada cliente tiene su propia piel diseñada desde cero, no hay estilos base preparados de antemano. Es la etapa de más trabajo manual.
+1. Propuesta visual con el material del Paso 1 (la landing promete una propuesta en 48 h).
+2. Hasta 2 rondas de ajustes.
+3. Llevarla a código como un componente NUEVO (ej. `SkinNombreCliente.js`, nunca el archivo del piloto), siguiendo el patrón de `SkinPilotoByOlivia.js`: componente de presentación puro + un desvío en `page.js`. Con el segundo cliente con piel propia, conviene cambiar el `if` por slug a un campo `plantilla_visual` en `negocios`.
+4. Armar también su plantilla de mail de comprobante con el mismo diseño: copiar `src/lib/emails/comprobanteByOlivia.js` como archivo nuevo y sumarlo por slug en `comprobanteCliente.js`.
+5. Igual cargar los campos genéricos del panel (colores, logo, texto de bienvenida) como respaldo.
 
-Si el paquete incluye diseño a medida (tipo el del piloto), esa es la etapa de más trabajo manual — conviene optimizarla con el tiempo (por ejemplo, armando 2-3 "estilos base" reutilizables en vez de diseñar desde cero cada vez, si el volumen de clientes lo justifica). El patrón técnico para una piel a medida ya quedó probado con `SkinPilotoByOlivia.js`: un componente de presentación por negocio + un desvío en `page.js` — repetible para el próximo cliente como un componente NUEVO (nunca el mismo archivo del piloto).
+## Paso 6 — Dominio propio
+1. Registrar el dominio .com.ar en NIC Argentina (aclarar en los términos a nombre de quién queda).
+2. Agregarlo al proyecto en Vercel y cargar en NIC Argentina los registros DNS que indica Vercel (el SSL lo pone Vercel solo).
+3. Cargar el dominio en la fila del negocio (columna `dominio`, pendiente de construir — ver Parte 3 de `camino-a-lanzamiento.md`).
 
-## Paso 6 — Configurar notificaciones
-Email del dueño cargado en el panel, para que le lleguen los avisos de turno nuevo. Sumar WhatsApp más adelante, cuando el volumen de un cliente lo pida.
+## Paso 7 — Configurar notificaciones
+Email del dueño cargado en el panel, para que le lleguen los avisos de turno nuevo (requiere el dominio de la plataforma verificado en Resend). Chequear que también salgan el comprobante y el recordatorio de 24 h al cliente. Sumar WhatsApp más adelante, cuando el volumen de un cliente lo pida.
 
-## Paso 7 — Probar el circuito completo
-Probar el circuito completo con ese negocio (reservar → pagar → confirmación → mail) antes de darlo por lanzado — igual que se hizo con el piloto.
+## Paso 8 — Probar el circuito completo
+Probar el circuito completo con ese negocio, ya en su dominio propio (reservar → pagar → confirmación → mail a la dueña → comprobante al cliente) antes de darlo por lanzado. Con credenciales reales, hacer una reserva con una seña chica de verdad y después cancelarla / devolverla desde Mercado Pago.
 
-## Paso 8 — Publicar
-Publicar el link `tudominio.com/slug-del-negocio`. No hace falta ningún deploy nuevo — ya vive en la misma plataforma, junto al piloto (que sigue intacto en su propio slug).
+## Paso 9 — Publicar y entregar
+1. Pasarle al cliente su link (`sudominio.com.ar`), su usuario del panel, y una explicación corta de cómo usar el panel (ver reservas, cancelar, bloquear horarios, cargar ausencias).
+2. Arrancar a cobrar la mensualidad.
+
+No hace falta ningún deploy nuevo para los datos — el negocio vive en la misma plataforma, junto al piloto (que sigue intacto en su propio slug). Solo hay deploy si se sumó una piel a medida nueva (Paso 5).
 
 ## Cosas a tener en el radar
 
@@ -56,4 +74,4 @@ Publicar el link `tudominio.com/slug-del-negocio`. No hace falta ningún deploy 
 
 ---
 
-**Comentario pendiente de Paulina (sin responder todavía):** en el Claude Doc original de este playbook quedó una pregunta anotada sobre el Paso 5 — si conviene preparar 2-3 estilos base de antemano o esperar al primer cliente concreto para decidirlo. Documento original: https://claude.ai/artifact/905e3e4f-1482-46d7-af14-6e173ad7b633
+**Pregunta de Paulina sobre el Paso 5 — resuelta el 08/10/2026:** no se preparan 2–3 estilos base de antemano; el diseño se arma con cada cliente. Documento original: https://claude.ai/artifact/905e3e4f-1482-46d7-af14-6e173ad7b633

@@ -10,6 +10,12 @@
 -- migracion_duracion_variable.sql) y columna "modo_demo" en negocios
 -- (26/09/2026, ver migración al final de este archivo, pendiente de
 -- correr en Supabase).
+--
+-- Actualizado el 08/10/2026 para reflejar TODO lo que ya está aplicado en
+-- Supabase (antes faltaba): columna "categoria" en servicios (Paso 4),
+-- "email_notificaciones" en negocios (Paso 7) y la tabla "negocios_pagos"
+-- con "mercadopago_webhook_secret" (Pasos 5 y 8). Al final del archivo
+-- quedan las migraciones explícitas, por si hay que recrear la base.
 -- ============================================================
 
 create extension if not exists pgcrypto;
@@ -40,10 +46,27 @@ create table public.negocios (
   -- cualquiera pueda recorrer el flujo completo sin necesitar una cuenta de
   -- prueba de Mercado Pago. Sumado 26/09/2026.
   modo_demo boolean not null default false,
+  -- A dónde avisarle a la dueña de cada turno nuevo confirmado (Resend,
+  -- ver src/lib/confirmarPago.js, avisarNuevoTurno). Sumado 25/09/2026.
+  email_notificaciones text,
   creado_en timestamptz not null default now()
 );
 
 create index idx_negocios_owner_id on public.negocios(owner_id);
+
+-- ============================================================
+-- NEGOCIOS_PAGOS (credenciales de Mercado Pago, separadas de "negocios")
+-- ============================================================
+-- "negocios" tiene lectura pública, así que los datos sensibles de cobro
+-- viven acá, SIN política de lectura pública: solo el dueño lee/escribe su
+-- fila, y el servidor la lee con la Service Role Key (src/lib/supabaseAdmin.js).
+create table public.negocios_pagos (
+  negocio_id uuid primary key references public.negocios(id) on delete cascade,
+  mercadopago_access_token text,
+  -- Clave secreta para validar la firma x-signature del webhook (Paso 8)
+  mercadopago_webhook_secret text,
+  actualizado_en timestamptz not null default now()
+);
 
 -- ============================================================
 -- SUCURSALES
@@ -79,7 +102,10 @@ create table public.servicios (
   nombre text not null,
   descripcion text,
   precio numeric not null,
-  duracion_minutos integer not null
+  duracion_minutos integer not null,
+  -- Texto libre opcional (Manos / Pies / Faciales...). Si algún servicio la
+  -- tiene, el flujo de reserva muestra pestañas para filtrar. Sumado 20/09/2026.
+  categoria text
 );
 
 create index idx_servicios_negocio_id on public.servicios(negocio_id);
@@ -184,6 +210,7 @@ grant select on public.turnos_ocupados to anon, authenticated;
 -- ============================================================
 
 alter table public.negocios enable row level security;
+alter table public.negocios_pagos enable row level security;
 alter table public.sucursales enable row level security;
 alter table public.profesionales enable row level security;
 alter table public.servicios enable row level security;
@@ -210,6 +237,25 @@ create policy "negocios_update_propio"
 create policy "negocios_delete_propio"
   on public.negocios for delete
   using (auth.uid() = owner_id);
+
+-- ---- NEGOCIOS_PAGOS ----
+-- Sin política de lectura pública a propósito (datos sensibles).
+-- (El nombre exacto de la política en Supabase puede ser otro; lo que
+-- importa es la regla: solo el dueño del negocio.)
+create policy "negocios_pagos_admin_propio"
+  on public.negocios_pagos for all
+  using (
+    exists (
+      select 1 from public.negocios n
+      where n.id = negocios_pagos.negocio_id and n.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.negocios n
+      where n.id = negocios_pagos.negocio_id and n.owner_id = auth.uid()
+    )
+  );
 
 -- ---- SUCURSALES ----
 create policy "sucursales_select_publico"
@@ -371,3 +417,17 @@ alter table public.negocios
 update public.negocios
   set modo_demo = true
   where slug = 'unas-test';
+
+-- ============================================================
+-- MIGRACIONES YA CORRIDAS (registradas acá el 08/10/2026)
+-- ============================================================
+-- Todas ya están aplicadas en Supabase. Quedan anotadas solo como registro
+-- (son idempotentes, correrlas de nuevo no rompe nada).
+alter table public.servicios
+  add column if not exists categoria text;                         -- Paso 4
+
+alter table public.negocios
+  add column if not exists email_notificaciones text;              -- Paso 7
+
+alter table public.negocios_pagos
+  add column if not exists mercadopago_webhook_secret text;        -- Paso 8

@@ -245,8 +245,9 @@ export default function ReservaNegocio({ params }) {
     const telefono = datosCliente.telefono.trim();
     const email = datosCliente.email.trim();
 
-    if (!nombre || !telefono) {
-      setErrorReserva("Necesitamos al menos tu nombre y un teléfono de contacto.");
+    // El email es obligatorio: ahí le mandamos el comprobante del turno.
+    if (!nombre || !telefono || !email) {
+      setErrorReserva("Necesitamos tu nombre, un teléfono y un email para mandarte el comprobante.");
       return;
     }
 
@@ -834,10 +835,11 @@ export default function ReservaNegocio({ params }) {
             />
             <input
               type="email"
-              placeholder="Email (opcional)"
+              placeholder="Email (te mandamos el comprobante)"
               value={datosCliente.email}
               onChange={(e) => actualizarDatoCliente("email", e.target.value)}
               className="rounded-lg border px-4 py-3"
+              required
             />
 
             {errorReserva && <p className="text-sm text-red-600">{errorReserva}</p>}

@@ -484,10 +484,11 @@ export default function SkinPilotoByOlivia({
               />
               <input
                 type="email"
-                placeholder="Email (opcional)"
+                placeholder="Email (te mandamos el comprobante)"
                 value={datosCliente.email}
                 onChange={(e) => actualizarDatoCliente("email", e.target.value)}
                 className="bo-input"
+                required
               />
               {errorReserva && <p className="bo-error">{errorReserva}</p>}
               <button type="submit" disabled={enviandoReserva} className="bo-btn-primary">

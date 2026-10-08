@@ -11,3 +11,18 @@ export function formatearFechaCorta(iso) {
   const fecha = new Date(y, m - 1, d);
   return `${NOMBRES_DIA_CORTO[fecha.getDay()]} ${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
 }
+
+const NOMBRES_DIA_LARGO = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const NOMBRES_MES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+// Versión larga, tipo "jueves 15 de octubre" — pensada para los mails,
+// donde hay más lugar que en la pantalla del celular.
+export function formatearFechaLarga(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const fecha = new Date(y, m - 1, d);
+  return `${NOMBRES_DIA_LARGO[fecha.getDay()]} ${d} de ${NOMBRES_MES[m - 1]}`;
+}

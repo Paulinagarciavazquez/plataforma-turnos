@@ -245,6 +245,10 @@ Hasta ahora, la única manera de confirmar un pago era que el cliente volviera d
 - Configurar la URL del webhook y pegar la clave secreta, tanto para el momento en que haya dominio real como, opcionalmente, antes con un túnel de prueba.
 - Probar de punta a punta: que un pago real dispare la notificación, que la firma valide correctamente, y que la reserva se confirme (y mande el email) sin que el cliente haya vuelto a la web.
 
+## Próximo bloque de trabajo (08/10/2026) — preparar el primer cliente
+
+Desde el 08/10/2026 el trabajo sigue en Claude Code (antes Claude Cowork). Se comparó la landing del servicio ("Agenda Estudio", `C:\Users\pauli\agenda-estudio\sena-estudio.html`: $120.000 único + $25.000/mes, diseño a medida siempre incluido) con el código, y faltan funciones que la landing promete: mail con comprobante al cliente, recordatorio automático 24 h antes, dominio propio por cliente, botón "agregar al calendario" y, opcional, usuarios por profesional. El detalle y el orden están en la Parte 3 de `claude/camino-a-lanzamiento.md`. `schema-supabase.sql` se actualizó para incluir `categoria`, `email_notificaciones` y `negocios_pagos`.
+
 ## Notas técnicas generales para sesiones futuras
 - El entorno remoto donde corre el asistente no puede levantar el `next dev` de este proyecto (limitación de SO/binarios nativos) — las pruebas en navegador las tiene que hacer Paulina en su propia compu. Cada vez que cierra la terminal o reinicia la compu, hay que volver a correr `npm run dev` desde la carpeta del proyecto antes de poder abrir `localhost:3000`.
 - La carpeta del proyecto está sincronizada con OneDrive, y algunos días el acceso a los archivos desde el entorno remoto es mucho más lento de lo normal (ESLint o npm install pueden tardar varios minutos en vez de segundos) — no es un problema del código, conviene tenerlo en cuenta y no asumir que algo se rompió solo porque un comando tarda.

@@ -47,14 +47,19 @@ El piloto (`unas-test`) se queda con `modo_demo = true` **para siempre** — es 
 
 ## Parte 2 — Pasos para ofrecer esto como servicio y sumar el próximo negocio sin fricción
 
-**Modelo de cobro — decidido el 27/09/2026.** Fee de alta (pago único al arrancar, cubre el trabajo de configuración y, si corresponde, diseño a medida) + una suscripción mensual chica que cubre hosting y soporte. Se descartó cobrar solo por suscripción (tarda más en cubrir el trabajo inicial) y el % sobre cada seña vía `marketplace_fee` de Mercado Pago (ingreso variable) — queda como posible opción futura.
-- Pensar dos niveles de fee de alta: uno para "estilos base" reutilizables, otro más alto si quiere diseño a medida tipo el del piloto.
-- Pensar el precio en un equivalente USD (los costos fijos reales están en dólares) y ajustarlo cada tanto en pesos.
-- **Montos finales: todavía sin definir** — pendiente de pensar con datos concretos del mercado o al momento de negociar con el primer cliente real. Benchmark de mercado (07/10/2026): Gendu $9.100–$42.100/mes, ReservaSimple Premium $18.999/mes, AgendaPro ~USD 40/mes — todos sin diseño a medida incluido.
+**Modelo de cobro — decidido el 27/09/2026.** Fee de alta (pago único al arrancar, cubre el trabajo de configuración y diseño a medida) + una suscripción mensual que cubre hosting y soporte. Se descartó cobrar solo por suscripción (tarda más en cubrir el trabajo inicial) y el % sobre cada seña vía `marketplace_fee` de Mercado Pago (ingreso variable) — queda como posible opción futura.
+
+**Montos y oferta — definidos (08/10/2026), publicados en la landing del servicio "Agenda Estudio"** (`C:\Users\pauli\agenda-estudio\sena-estudio.html`, sección Precios). La landing es la fuente de verdad; si cambian ahí, actualizar acá:
+- **$120.000 pago único** (diseño a medida) **+ $25.000/mes** de mantenimiento. Sin permanencia. 0% de comisión por turno.
+- Incluye: diseño exclusivo de la web con 2 rondas de ajustes, reservas online con cobro de seña, panel de agenda para todo el equipo, recordatorios automáticos (mail al cliente 24 h antes), dominio propio (.com.ar) + SSL + hosting, soporte por WhatsApp, online en 14 días.
+- Un solo nivel: **el diseño a medida va incluido siempre** (no hay paquete de "estilos base"). Se descartó la idea de dos niveles de fee.
+- Benchmark de mercado (07/10/2026), como referencia: Gendu $9.100–$42.100/mes, ReservaSimple Premium $18.999/mes, AgendaPro ~USD 40/mes — todos sin diseño a medida incluido.
+- Ojo con la inflación: los costos fijos reales están en dólares (ver tabla de arriba) — revisar la mensualidad en pesos cada tanto.
+
+**Diseño por cliente — decidido (08/10/2026):** no se preparan estilos base de antemano. Con cada cliente nuevo se diseña su piel a medida desde cero (un componente nuevo tipo `SkinPilotoByOlivia.js`), como promete la landing ("no es una plantilla con tu logo").
 
 **Otras decisiones de negocio pendientes:**
-- **Qué incluye la oferta base vs. qué es extra**: si el diseño a medida va incluido siempre o es un adicional. ¿Sucursales múltiples, WhatsApp, webhook, son parte del paquete base o mejoras futuras?
-- **Un contrato/términos simples con cada negocio**: qué incluye el servicio, quién da soporte y con qué tiempos, y que la plata de las señas va directo a la cuenta de Mercado Pago del propio negocio, nunca pasa por una cuenta de Paulina.
+- **Un contrato/términos simples con cada negocio** (ver Parte 3, bloque C).
 
 **Playbook técnico repetible para dar de alta un negocio nuevo**: ver `claude/playbook-alta-negocio.md` en esta misma carpeta.
 
@@ -66,12 +71,40 @@ El piloto (`unas-test`) se queda con `modo_demo = true` **para siempre** — es 
 - Editar nombre/slug/rubro de un negocio desde el panel (hoy solo por SQL directo) — mejora futura.
 - Liberación automática de horarios de pagos rechazados — mejora futura.
 
+## Parte 3 — Checklist: lista para recibir al primer cliente (08/10/2026)
+
+Se revisó la landing de Agenda Estudio contra el código real de la plataforma. **La landing promete algunas cosas que la plataforma todavía no hace** — hay que construirlas antes de cerrar con el primer cliente (o, como mínimo, antes de los 14 días de entrega que promete la landing). Ordenado por prioridad.
+
+### A. Brechas entre lo que promete la landing y lo que existe (código)
+1. **Mail al cliente con el comprobante del turno — código hecho el 08/10/2026, falta probarlo en producción.** `mandarComprobanteCliente` en `src/lib/confirmarPago.js` sale junto con el aviso a la dueña (pago real y demo). Las plantillas viven en `src/lib/emails/`: `comprobanteByOlivia.js` es la del piloto (mismo diseño que su piel) y `comprobanteCliente.js` elige la plantilla por slug, con una genérica de respaldo. **Cada cliente nuevo con diseño propio tiene que tener su propia plantilla de mail** (copiar la del piloto como archivo nuevo, nunca editar esa). El email del cliente pasó a ser obligatorio en el formulario. El remitente sale de la variable `EMAIL_REMITENTE` (si no está, usa `onboarding@resend.dev`), y si el cliente responde el mail, la respuesta le llega al `email_notificaciones` del negocio. Hasta verificar el dominio (B2), Resend solo entrega a la dirección de Paulina. Riesgo a tener en cuenta: con el dominio verificado, la demo pública manda mails reales a cualquier dirección que alguien escriba (y consume el cupo de 100/día de Resend) — si hace falta, limitar cuántos mails manda la demo.
+2. **Recordatorio automático por mail 24 h antes.** No existe. Se arma con un cron (Vercel Cron) que corre una vez por día, busca los turnos confirmados de mañana y les manda el mail. Hace falta una columna para no mandarlo dos veces (ej. `recordatorio_enviado`).
+3. **Dominio propio por cliente (.com.ar).** Hoy cada negocio vive en `plataforma-turnos-9bcp.vercel.app/slug`. Hay que: sumar una columna `dominio` en `negocios`, un `middleware` de Next.js que lea el dominio con el que entró el visitante y muestre el negocio correspondiente, y agregar cada dominio al proyecto en Vercel (+ apuntar el DNS desde NIC Argentina). SSL lo da Vercel solo.
+4. **Botón "Agregar al calendario"** en la pantalla de turno confirmado (aparece en el mockup de la landing). Chico: un link de Google Calendar + un archivo `.ics`.
+5. **"Panel de agenda para todo el equipo".** Hoy hay un solo login por negocio. Para el primer cliente alcanza con un usuario compartido por todo el equipo. Si el cliente pide que cada profesional tenga su propio usuario, eso es desarrollo nuevo (tabla de miembros del negocio + cambiar las políticas RLS).
+6. Detalles menores que menciona la landing (no bloquean): fotos en los servicios (se pueden resolver dentro de la piel a medida de cada cliente, o sumar una columna `imagen_url`); vista semanal en el panel (hoy es día por día); bloquear un feriado para todo el negocio de una vez (hoy se carga como ausencia de cada profesional).
+
+### B. Infraestructura (cuentas y servicios)
+1. **Dominio de la plataforma** (ej. `agendaestudio.com.ar`). Hace falta uno propio para verificar Resend y como remitente de los mails. Puede ser el mismo de la landing.
+2. **Verificar ese dominio en Resend** (registros DNS). Sin esto, los mails solo le llegan a Paulina — ni a la dueña del negocio ni a sus clientes.
+3. **Vercel Pro** (≈ USD 20/mes) en cuanto se cobre el primer mes: el plan gratis no permite uso comercial. Necesario también para que el cron del recordatorio corra con más flexibilidad.
+4. **Supabase**: el plan gratis pausa el proyecto si pasa ~7 días sin uso y no tiene backups. Con un cliente real, una pausa = su web caída. Recomendado pasar a Pro (≈ USD 25/mes) al tener el primer cliente, o como mínimo hacer un backup manual periódico.
+5. Números: con un cliente, los costos fijos (~USD 45/mes + dominios) ya superan la mensualidad de $25.000. Se equilibra a partir de 2–3 clientes; el primer fee de alta ($120.000) cubre ese arranque.
+
+### C. Lo administrativo
+1. **Contrato / términos simples** (1 página) que repita lo que dice la landing: qué incluye, 2 rondas de ajustes, entrega en 14 días desde que el cliente manda todo el material, sin permanencia (con cuánto aviso se da de baja), soporte por WhatsApp y en qué horario/tiempo de respuesta, que la plata de las señas va directo a la cuenta de Mercado Pago del negocio, quién es dueño del dominio y qué pasa con él si se da de baja.
+2. **Facturación**: tener cómo emitir factura (monotributo) para el fee de alta y la mensualidad.
+3. **Cómo cobrar la mensualidad**: link de pago o suscripción de Mercado Pago, transferencia, etc.
+4. **Formulario de relevamiento** para el cliente (Paso 1 del playbook): datos, servicios con precio y duración, profesionales, horarios, seña, fotos, logo, paleta/referencias, dominio que quiere.
+
+### D. El día que llega el cliente
+Seguir `claude/playbook-alta-negocio.md`, que ya contempla dominio propio, diseño a medida y la prueba con un pago real.
+
 ## Resumen del orden sugerido
 1. Deploy en Vercel + dominio simple — hecho.
 2. Diseño pulido llevado al código real del piloto + presentación — hecho, 100% listo para compartir como link.
-3. Modelo de cobro — decidido (fee de alta + suscripción chica). Falta fijar los montos concretos.
+3. Modelo de cobro — hecho: $120.000 único + $25.000/mes, publicado en la landing de Agenda Estudio.
 4. Playbook de alta de negocio — escrito (ver `claude/playbook-alta-negocio.md`).
-5. Sumar el primer cliente real dando de alta un negocio NUEVO (nunca editando el piloto) siguiendo ese playbook.
-6. Recién ahí, con uso real, evaluar si hay que pasar a planes pagos.
+5. **Cerrar las brechas de la Parte 3** (mail al cliente, recordatorio 24 h, dominio por cliente, botón de calendario) + infraestructura + contrato.
+6. Sumar el primer cliente real dando de alta un negocio NUEVO (nunca editando el piloto) siguiendo ese playbook.
 
-**Pendiente hoy:** verificar el dominio en Resend, fijar los montos finales del fee de alta y la suscripción, y definir qué incluye el paquete base vs. qué es extra + un contrato simple.
+**Pendiente hoy:** todo lo de la Parte 3.
