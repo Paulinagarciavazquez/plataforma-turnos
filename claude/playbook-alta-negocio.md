@@ -46,8 +46,10 @@ Siempre incluido (decidido 08/10/2026): cada cliente tiene su propia piel diseñ
 
 ## Paso 6 — Dominio propio
 1. Registrar el dominio .com.ar en NIC Argentina (aclarar en los términos a nombre de quién queda).
-2. Agregarlo al proyecto en Vercel y cargar en NIC Argentina los registros DNS que indica Vercel (el SSL lo pone Vercel solo).
-3. Cargar el dominio en la fila del negocio (columna `dominio`, pendiente de construir — ver Parte 3 de `camino-a-lanzamiento.md`).
+2. Agregarlo (con y sin `www.`) al proyecto **de la plataforma** en Vercel (no al de la landing), y cargar en NIC Argentina lo que indique Vercel — lo más simple es delegar a los nameservers de Vercel. El SSL lo pone Vercel solo.
+3. Cargar el dominio en la fila del negocio, sin `www.` ni `https://`:
+   `update negocios set dominio = 'sudominio.com.ar' where slug = 'su-slug';`
+   Desde ese momento `src/proxy.js` muestra su página en la raíz del dominio (puede tardar hasta 5 minutos por la cache).
 
 ## Paso 7 — Configurar notificaciones
 Email del dueño cargado en el panel, para que le lleguen los avisos de turno nuevo (requiere el dominio de la plataforma verificado en Resend). Chequear que también salgan el comprobante y el recordatorio de 24 h al cliente. Sumar WhatsApp más adelante, cuando el volumen de un cliente lo pida.

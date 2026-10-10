@@ -49,6 +49,10 @@ create table public.negocios (
   -- A dónde avisarle a la dueña de cada turno nuevo confirmado (Resend,
   -- ver src/lib/confirmarPago.js, avisarNuevoTurno). Sumado 25/09/2026.
   email_notificaciones text,
+  -- Dominio propio del negocio, sin "www." ni "https://" (ej.
+  -- "turnos.minegocio.com.ar"). Si está cargado, src/proxy.js muestra la
+  -- página de reservas de este negocio en la raíz de ese dominio. Sumado 10/10/2026.
+  dominio text unique,
   creado_en timestamptz not null default now()
 );
 
@@ -443,3 +447,14 @@ alter table public.negocios_pagos
 -- recordatorios (api/cron/recordatorios) corra por primera vez.
 alter table public.reservas
   add column if not exists recordatorio_enviado_en timestamptz;
+
+-- ============================================================
+-- MIGRACIÓN: dominio propio por negocio (10/10/2026)
+-- ============================================================
+alter table public.negocios
+  add column if not exists dominio text unique;
+
+-- La demo se ve en demo.agenda-estudio.com.ar
+update public.negocios
+  set dominio = 'demo.agenda-estudio.com.ar'
+  where slug = 'unas-test';
