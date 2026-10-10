@@ -41,7 +41,7 @@ Siempre incluido (decidido 08/10/2026): cada cliente tiene su propia piel diseñ
 1. Propuesta visual con el material del Paso 1 (la landing promete una propuesta en 48 h).
 2. Hasta 2 rondas de ajustes.
 3. Llevarla a código como un componente NUEVO (ej. `SkinNombreCliente.js`, nunca el archivo del piloto), siguiendo el patrón de `SkinPilotoByOlivia.js`: componente de presentación puro + un desvío en `page.js`. Con el segundo cliente con piel propia, conviene cambiar el `if` por slug a un campo `plantilla_visual` en `negocios`.
-4. Armar también su plantilla de mail de comprobante con el mismo diseño: copiar `src/lib/emails/comprobanteByOlivia.js` como archivo nuevo y sumarlo por slug en `comprobanteCliente.js`.
+4. Armar también su plantilla de mails al cliente (comprobante + recordatorio) con el mismo diseño: copiar `src/lib/emails/mailClienteByOlivia.js` como archivo nuevo y sumarlo por slug en `mailCliente.js`.
 5. Igual cargar los campos genéricos del panel (colores, logo, texto de bienvenida) como respaldo.
 
 ## Paso 6 — Dominio propio

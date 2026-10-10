@@ -1,7 +1,7 @@
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { Resend } from "resend";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { armarComprobanteCliente } from "@/lib/emails/comprobanteCliente";
+import { armarMailCliente } from "@/lib/emails/mailCliente";
 import { escaparHtml, formatearPrecio } from "@/lib/emails/datosDelTurno";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -13,9 +13,10 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 // (ej. turnos@agendaestudio.com.ar) — no hace falta tocar código.
 const REMITENTE = process.env.EMAIL_REMITENTE || "onboarding@resend.dev";
 
-// Todo lo que necesitan los mails (aviso a la dueña + comprobante al
-// cliente) sobre una reserva.
-const CAMPOS_RESERVA =
+// Todo lo que necesitan los mails (aviso a la dueña + comprobante y
+// recordatorio al cliente) sobre una reserva. Lo usa también la tarea
+// diaria de recordatorios (api/cron/recordatorios).
+export const CAMPOS_RESERVA =
   "id, negocio_id, fecha, hora, duracion_minutos, monto_sena, estado, nombre_cliente, telefono_cliente, email_cliente, servicios(nombre, precio), sucursales(nombre, direccion), profesionales(nombre), negocios(nombre, slug, email_notificaciones, color_primario, modo_demo)";
 
 // Le avisa por email a la dueña del negocio que se confirmó (y pagó) un
@@ -48,15 +49,16 @@ async function avisarNuevoTurno(reserva) {
   }
 }
 
-// Le manda al cliente el comprobante de su turno confirmado, con el diseño
-// del negocio (ver src/lib/emails/comprobanteCliente.js). Igual que el
-// aviso a la dueña: si falla, se loguea y la confirmación sigue su curso.
-// Si el cliente responde el mail, la respuesta le llega al negocio.
-async function mandarComprobanteCliente(reserva) {
-  if (!resend || !reserva.email_cliente) return;
+// Le manda al cliente un mail sobre su turno ("comprobante" al confirmarse,
+// "recordatorio" el día anterior), con el diseño del negocio (ver
+// src/lib/emails/mailCliente.js). Igual que el aviso a la dueña: si falla,
+// se loguea y nunca rompe nada. Si el cliente responde el mail, la
+// respuesta le llega al negocio. Devuelve true si Resend lo aceptó.
+export async function mandarMailCliente(reserva, tipo) {
+  if (!resend || !reserva.email_cliente) return false;
 
   try {
-    const { asunto, html } = armarComprobanteCliente(reserva);
+    const { asunto, html } = armarMailCliente(reserva, tipo);
     const nombreRemitente = (reserva.negocios?.nombre || "Turnos").replace(/["<>]/g, "");
     const { error } = await resend.emails.send({
       from: `"${nombreRemitente}" <${REMITENTE}>`,
@@ -65,15 +67,20 @@ async function mandarComprobanteCliente(reserva) {
       subject: asunto,
       html,
     });
-    if (error) console.error("Resend rechazó el comprobante al cliente:", error);
+    if (error) {
+      console.error(`Resend rechazó el mail "${tipo}" al cliente:`, error);
+      return false;
+    }
+    return true;
   } catch (errorEmail) {
-    console.error("Error mandando el comprobante al cliente:", errorEmail);
+    console.error(`Error mandando el mail "${tipo}" al cliente:`, errorEmail);
+    return false;
   }
 }
 
 // Los dos mails que salen cuando un turno queda confirmado, en paralelo.
 async function mandarMailsDeTurnoConfirmado(reserva) {
-  await Promise.all([avisarNuevoTurno(reserva), mandarComprobanteCliente(reserva)]);
+  await Promise.all([avisarNuevoTurno(reserva), mandarMailCliente(reserva, "comprobante")]);
 }
 
 // Verifica, del lado del servidor, si el pago de una reserva se acreditó de

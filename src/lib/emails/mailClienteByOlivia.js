@@ -1,6 +1,8 @@
-// Mail de comprobante para el cliente, con el diseño a medida del piloto
-// "by olivia" (unas-test) — la versión "mail" de SkinPilotoByOlivia.js.
-// Misma paleta (burgundy / berry / taupe / almond) y el mismo tono.
+// Mails para el cliente (comprobante del turno y recordatorio del día
+// anterior), con el diseño a medida del piloto "by olivia" (unas-test) — la
+// versión "mail" de SkinPilotoByOlivia.js. Misma paleta (burgundy / berry /
+// taupe / almond) y el mismo tono. Los dos mails comparten el diseño y solo
+// cambian los textos de arriba (ver TEXTOS).
 //
 // Los mails no pueden usar CSS como una web: todo va con estilos en línea y
 // tablas, y las tipografías de Google solo se ven en algunos programas de
@@ -8,8 +10,8 @@
 // Helvetica, que se eligieron como respaldo para que se vea parecido.
 //
 // Para un cliente nuevo con diseño propio: copiar este archivo como
-// comprobante<Cliente>.js, cambiar el diseño, y sumarlo en
-// comprobanteCliente.js — nunca editar este (es el del piloto).
+// mailCliente<Cliente>.js, cambiar el diseño, y sumarlo en mailCliente.js
+// — nunca editar este (es el del piloto).
 
 const C = {
   burgundy: "#890620",
@@ -31,8 +33,26 @@ function fila(etiqueta, valor, extra = "") {
     </tr>`;
 }
 
-export function comprobanteByOlivia(d) {
-  const asunto = `Tu turno en ${d.nombreNegocioPlano} está confirmado ✓`;
+const TEXTOS = {
+  comprobante: (d) => ({
+    asunto: `Tu turno en ${d.nombreNegocioPlano} está confirmado ✓`,
+    icono: "✓",
+    titulo: "¡Tu turno está confirmado!",
+    subtitulo: "guardamos tu lugar.",
+    despedida: "¡Te esperamos!",
+  }),
+  recordatorio: (d) => ({
+    asunto: `Te esperamos mañana a las ${d.horaInicio} · ${d.nombreNegocioPlano}`,
+    icono: "♡",
+    titulo: "¡Te esperamos mañana!",
+    subtitulo: "te recordamos tu turno.",
+    despedida: "¡Nos vemos mañana!",
+  }),
+};
+
+// tipo: "comprobante" | "recordatorio"
+export function mailClienteByOlivia(d, tipo) {
+  const { asunto, icono, titulo, subtitulo, despedida } = TEXTOS[tipo](d);
 
   const html = `<!doctype html>
 <html lang="es">
@@ -40,7 +60,7 @@ export function comprobanteByOlivia(d) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Jost:wght@400;500&display=swap" rel="stylesheet">
-<title>${asunto}</title>
+<title>${d.nombreNegocio}</title>
 </head>
 <body style="margin:0;padding:0;background:${C.cream};">
   <div style="display:none;max-height:0;overflow:hidden;">${d.servicio} · ${d.fecha} · ${d.horario}</div>
@@ -51,9 +71,9 @@ export function comprobanteByOlivia(d) {
         <!-- Encabezado con el degradado de la marca -->
         <tr><td align="center" style="background-color:${C.burgundy};background-image:linear-gradient(135deg, ${C.burgundy} 0%, ${C.berry} 45%, ${C.taupe} 80%, ${C.almond} 100%);padding:40px 28px 36px;">
           <div style="font-family:${SERIF};font-size:30px;color:${C.cream};letter-spacing:1px;">${d.nombreNegocio}</div>
-          <div style="width:44px;height:44px;line-height:44px;margin:22px auto 16px;border-radius:50%;border:1.5px solid ${C.cream};font-family:${SANS};font-size:22px;color:${C.cream};">✓</div>
-          <div style="font-family:${SERIF};font-size:26px;color:${C.cream};">¡Tu turno está confirmado!</div>
-          <div style="font-family:${SANS};font-size:15px;color:${C.cream};opacity:.9;margin-top:8px;">${d.nombreCliente ? `Hola ${d.nombreCliente}, ` : ""}guardamos tu lugar.</div>
+          <div style="width:44px;height:44px;line-height:44px;margin:22px auto 16px;border-radius:50%;border:1.5px solid ${C.cream};font-family:${SANS};font-size:22px;color:${C.cream};">${icono}</div>
+          <div style="font-family:${SERIF};font-size:26px;color:${C.cream};">${titulo}</div>
+          <div style="font-family:${SANS};font-size:15px;color:${C.cream};opacity:.9;margin-top:8px;">${d.nombreCliente ? `Hola ${d.nombreCliente}, ` : ""}${subtitulo}</div>
         </td></tr>
 
         <!-- Resumen del turno -->
@@ -85,7 +105,7 @@ export function comprobanteByOlivia(d) {
         <tr><td style="padding:22px 28px 30px;font-family:${SANS};font-size:14px;line-height:1.6;color:${C.ink};">
           <p style="margin:0 0 10px;">Te pedimos llegar 5 minutos antes.</p>
           ${d.puedeResponder ? `<p style="margin:0;">¿Necesitás cambiar o cancelar el turno? Respondé este mail y te ayudamos.</p>` : ""}
-          <p style="margin:18px 0 0;font-family:${SERIF};font-size:20px;color:${C.burgundy};">¡Te esperamos!</p>
+          <p style="margin:18px 0 0;font-family:${SERIF};font-size:20px;color:${C.burgundy};">${despedida}</p>
         </td></tr>
 
         ${d.esDemo ? `

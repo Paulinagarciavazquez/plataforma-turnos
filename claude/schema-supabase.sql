@@ -174,6 +174,10 @@ create table public.reservas (
   monto_sena numeric,
   id_pago_mercadopago text,
   bloqueo_manual boolean not null default false,
+  -- Cuándo se le mandó al cliente el mail de recordatorio del día anterior
+  -- (vacío = todavía no). Lo marca api/cron/recordatorios para no mandarlo
+  -- dos veces. Sumado 08/10/2026.
+  recordatorio_enviado_en timestamptz,
   creado_en timestamptz not null default now()
 );
 
@@ -431,3 +435,11 @@ alter table public.negocios
 
 alter table public.negocios_pagos
   add column if not exists mercadopago_webhook_secret text;        -- Paso 8
+
+-- ============================================================
+-- MIGRACIÓN: recordatorio del día anterior (08/10/2026)
+-- ============================================================
+-- Correr en el SQL Editor de Supabase ANTES de que la tarea diaria de
+-- recordatorios (api/cron/recordatorios) corra por primera vez.
+alter table public.reservas
+  add column if not exists recordatorio_enviado_en timestamptz;

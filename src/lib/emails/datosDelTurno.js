@@ -36,6 +36,7 @@ export function datosDelTurno(reserva) {
     sucursal: reserva.sucursales ? escaparHtml(reserva.sucursales.nombre) : null,
     direccion: reserva.sucursales?.direccion ? escaparHtml(reserva.sucursales.direccion) : null,
     fecha: formatearFechaLarga(reserva.fecha),
+    horaInicio,
     horario: reserva.duracion_minutos
       ? `${horaInicio} a ${horaFin(horaInicio, reserva.duracion_minutos)} h`
       : `${horaInicio} h`,
