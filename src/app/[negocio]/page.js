@@ -4,19 +4,8 @@ import { use, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { generarProximosDias, generarHorariosInicio, filtrarHorariosLibres } from "../../lib/horarios";
 import { formatearFechaCorta } from "../../lib/formatearFecha";
+import { calcularMontoSena } from "../../lib/reservas";
 import SkinPilotoByOlivia from "./SkinPilotoByOlivia";
-
-function calcularMontoSena(negocio, servicio) {
-  if (!negocio || !servicio) return 0;
-  const precioServicio = Number(servicio.precio) || 0;
-  const valorSena = Number(negocio.porcentaje_o_monto_sena) || 0;
-
-  if (negocio.tipo_sena === "monto_fijo") {
-    return valorSena;
-  }
-  // Por defecto (o tipo_sena === "porcentaje"), tratamos el valor como %
-  return Math.round((precioServicio * valorSena) / 100);
-}
 
 export default function ReservaNegocio({ params }) {
   const { negocio: slug } = use(params);
@@ -327,8 +316,6 @@ export default function ReservaNegocio({ params }) {
         body: JSON.stringify({
           negocioId: datosNegocio.id,
           reservaId,
-          monto: montoSena,
-          descripcion: `Seña - ${elecciones.servicio.nombre}`,
           slug,
           origin: window.location.origin,
         }),
@@ -437,8 +424,6 @@ export default function ReservaNegocio({ params }) {
         body: JSON.stringify({
           negocioId: reservaConfirmada.negocioId,
           reservaId: reservaConfirmada.reservaId,
-          monto: reservaConfirmada.montoSena,
-          descripcion: `Seña - ${reservaConfirmada.servicio?.nombre || "turno"}`,
           slug,
           origin: window.location.origin,
         }),

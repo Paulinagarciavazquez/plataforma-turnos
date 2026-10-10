@@ -166,6 +166,15 @@ export async function confirmarPagoDeReserva({ reservaId, paymentId }) {
   let nuevoEstado = reserva.estado;
   let estadoPago = "pendiente";
 
+  // Otro chequeo de seguridad: el pago tiene que cubrir la seña completa.
+  if (pagoMp.status === "approved" && Number(pagoMp.transaction_amount) < Number(reserva.monto_sena)) {
+    console.error("Pago por menos de la seña:", { reservaId, pagado: pagoMp.transaction_amount, sena: reserva.monto_sena });
+    return {
+      status: 200,
+      body: { ...resumenBase, estadoPago: "error", error: "El monto pagado no coincide con la seña. Contactanos." },
+    };
+  }
+
   if (pagoMp.status === "approved") {
     nuevoEstado = "confirmada";
     estadoPago = "aprobado";

@@ -9,6 +9,7 @@ import {
   horaFin,
   aIso,
 } from "../../lib/horarios";
+import { reservaSinPagarVencida } from "../../lib/reservas";
 
 const ETIQUETAS_ESTADO = {
   pendiente_pago: "Pendiente de pago",
@@ -253,7 +254,9 @@ export default function ListaReservas({ negocio }) {
                       {reserva.bloqueo_manual ? `Bloqueado: ${reserva.nombre_cliente}` : reserva.nombre_cliente}
                     </span>
                     <span className="text-sm text-gray-500">
-                      {ETIQUETAS_ESTADO[reserva.estado] || reserva.estado}
+                      {reservaSinPagarVencida(reserva)
+                        ? "Sin pagar (horario liberado)"
+                        : ETIQUETAS_ESTADO[reserva.estado] || reserva.estado}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">

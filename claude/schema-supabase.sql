@@ -458,3 +458,37 @@ alter table public.negocios
 update public.negocios
   set dominio = 'demo.agenda-estudio.com.ar'
   where slug = 'unas-test';
+
+-- ============================================================
+-- MIGRACIÓN: reservas sin pagar liberan el horario + seguridad (10/10/2026)
+-- ============================================================
+-- 1) Una reserva "pendiente_pago" retiene el horario solo 30 minutos
+--    (MINUTOS_PARA_PAGAR en src/lib/reservas.js — si se cambia ahí, cambiarlo
+--    acá). Pasado eso, el horario vuelve a ofrecerse online.
+create or replace view public.turnos_ocupados as
+select negocio_id, profesional_id, fecha, hora, duracion_minutos
+from public.reservas
+where estado = 'confirmada'
+   or (estado = 'pendiente_pago' and creado_en > now() - interval '30 minutes');
+
+grant select on public.turnos_ocupados to anon, authenticated;
+
+-- 2) Un visitante anónimo solo puede crear reservas "pendiente_pago" (antes
+--    podía crearlas ya "confirmada", sin pagar). La dueña sigue pudiendo
+--    crear bloqueos manuales (confirmados) para su propio negocio.
+drop policy if exists "reservas_insert_publico" on public.reservas;
+create policy "reservas_insert_publico"
+  on public.reservas for insert
+  with check (
+    (
+      estado = 'pendiente_pago'
+      and bloqueo_manual = false
+      and id_pago_mercadopago is null
+      and recordatorio_enviado_en is null
+      and creado_en between now() - interval '1 minute' and now() + interval '1 minute'
+    )
+    or exists (
+      select 1 from public.negocios n
+      where n.id = reservas.negocio_id and n.owner_id = auth.uid()
+    )
+  );

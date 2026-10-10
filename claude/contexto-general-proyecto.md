@@ -201,7 +201,7 @@ Camino elegido para el modo de conexión: por ahora, **conexión manual** (el du
 
 **Todavía no hecho de este paso:**
 - Conexión OAuth ("Conectar con Mercado Pago" con un click) para futuros clientes reales, en vez de pegar el token a mano — mejora futura, no bloquea nada de lo ya construido.
-- No se decidió todavía si un pago rechazado debería, después de un tiempo sin reintento, liberar el horario automáticamente (hoy queda `pendiente_pago` indefinidamente hasta que el cliente reintente o la dueña cancele a mano desde el panel).
+- No se decidió todavía si un pago rechazado debería, después de un tiempo sin reintento, liberar el horario automáticamente (hoy queda `pendiente_pago` indefinidamente hasta que el cliente reintente o la dueña cancele a mano desde el panel). **Resuelto el 10/10/2026:** retiene el horario 30 minutos y después se libera solo (ver `camino-a-lanzamiento.md`).
 
 **Paso 6 (botón "volver atrás" en el flujo de reserva) — completado y verificado el 22/09/2026.**
 

@@ -69,7 +69,7 @@ El piloto (`unas-test`) se queda con `modo_demo = true` **para siempre** — es 
 - Conexión OAuth con Mercado Pago (en vez de pegar el Access Token a mano) — mejora futura.
 - Soporte y mantenimiento: definir qué pasa cuando algo se rompe para un cliente real.
 - Editar nombre/slug/rubro de un negocio desde el panel (hoy solo por SQL directo) — mejora futura.
-- Liberación automática de horarios de pagos rechazados — mejora futura.
+- ~~Liberación automática de horarios de pagos rechazados~~ — hecho el 10/10/2026: una reserva sin pagar retiene el horario 30 min (`MINUTOS_PARA_PAGAR` en `src/lib/reservas.js` + vista `turnos_ocupados`), el link de Mercado Pago vence a la vez y se excluyen pagos en efectivo. En el mismo cambio: el servidor recalcula la seña (no confía en el navegador) y la política de insert de `reservas` no deja crear reservas confirmadas desde afuera.
 
 ## Parte 3 — Checklist: lista para recibir al primer cliente (08/10/2026)
 
@@ -81,7 +81,10 @@ Se revisó la landing de Agenda Estudio contra el código real de la plataforma.
 3. **Dominio propio por cliente (.com.ar) — código hecho el 10/10/2026.** `src/proxy.js` (en Next.js 16 el viejo `middleware` se llama `proxy`): si alguien entra por un dominio cargado en `negocios.dominio`, le muestra la página de ese negocio en la raíz (`/`), sin el slug en la URL. `/admin` y `/api` funcionan igual en cualquier dominio; la vuelta de Mercado Pago (que llega a `/slug?pago=...`) se redirige a `/?pago=...`. Los dominios de la plataforma (`*.vercel.app`, localhost) siguen igual que antes. Se prueba primero con la demo en `demo.agenda-estudio.com.ar`. Para sumar un dominio: agregarlo al proyecto de la plataforma en Vercel + cargarlo en la fila del negocio (sin `www.` ni `https://`). SSL lo da Vercel solo.
 4. ~~**Botón "Agregar al calendario"**~~ — descartado por ahora (10/10/2026, Paulina: no es importante). Si algún cliente lo pide: un link de Google Calendar + un archivo `.ics` en la pantalla de turno confirmado.
 5. **"Panel de agenda para todo el equipo".** Hoy hay un solo login por negocio. Para el primer cliente alcanza con un usuario compartido por todo el equipo. Si el cliente pide que cada profesional tenga su propio usuario, eso es desarrollo nuevo (tabla de miembros del negocio + cambiar las políticas RLS).
-6. Detalles menores que menciona la landing (no bloquean): fotos en los servicios (se pueden resolver dentro de la piel a medida de cada cliente, o sumar una columna `imagen_url`); vista semanal en el panel (hoy es día por día); bloquear un feriado para todo el negocio de una vez (hoy se carga como ausencia de cada profesional).
+6. **Pendientes anotados el 10/10/2026 (a resolver antes o con el primer cliente que los necesite):**
+    - **Horario distinto por día.** Hoy `negocios` tiene un solo `horario_apertura`/`horario_cierre` para todos los días; el formulario de relevamiento pide horario por día. Si un cliente lo necesita, hay que pasar a un horario por día (tabla o columna JSON) y adaptar `generarHorariosInicio`.
+    - **Política de cancelación visible en la web.** El formulario le dice al cliente que su política de cancelación se muestra en la web; hoy no hay un campo para eso. Por ahora se escribe a mano en la piel a medida de cada cliente; si se repite, sumar un campo `politica_cancelacion` en `negocios`.
+7. Detalles menores que menciona la landing (no bloquean): fotos en los servicios (se pueden resolver dentro de la piel a medida de cada cliente, o sumar una columna `imagen_url`); vista semanal en el panel (hoy es día por día); bloquear un feriado para todo el negocio de una vez (hoy se carga como ausencia de cada profesional).
 
 ### B. Infraestructura (cuentas y servicios)
 1. **Dominio de la plataforma: `agenda-estudio.com.ar`** — registrado por Paulina en NIC Argentina el 10/10/2026, delegación de DNS pendiente. Un solo dominio para todo: la landing en la raíz, la demo en un subdominio (`demo.agenda-estudio.com.ar`), y los mails saliendo desde `turnos@agenda-estudio.com.ar`. Plan elegido: delegar el DNS a Vercel (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`) para manejar todos los registros (incluidos los de Resend) desde un solo lugar.
@@ -91,10 +94,10 @@ Se revisó la landing de Agenda Estudio contra el código real de la plataforma.
 5. Números: con un cliente, los costos fijos (~USD 45/mes + dominios) ya superan la mensualidad de $25.000. Se equilibra a partir de 2–3 clientes; el primer fee de alta ($120.000) cubre ese arranque.
 
 ### C. Lo administrativo
-1. **Contrato / términos simples** (1 página) que repita lo que dice la landing: qué incluye, 2 rondas de ajustes, entrega en 14 días desde que el cliente manda todo el material, sin permanencia (con cuánto aviso se da de baja), soporte por WhatsApp y en qué horario/tiempo de respuesta, que la plata de las señas va directo a la cuenta de Mercado Pago del negocio, quién es dueño del dominio y qué pasa con él si se da de baja.
+1. **Contrato / términos simples — borrador hecho el 10/10/2026** en un Claude Doc: https://claude.ai/code/artifact/dcbf0f13-96a9-4060-9231-27ef8a2d1e58 (pendiente: que Paulina revise los valores propuestos y, si puede, que lo mire un abogado o contador). Lo que tenía que cubrir que repita lo que dice la landing: qué incluye, 2 rondas de ajustes, entrega en 14 días desde que el cliente manda todo el material, sin permanencia (con cuánto aviso se da de baja), soporte por WhatsApp y en qué horario/tiempo de respuesta, que la plata de las señas va directo a la cuenta de Mercado Pago del negocio, quién es dueño del dominio y qué pasa con él si se da de baja.
 2. **Facturación**: tener cómo emitir factura (monotributo) para el fee de alta y la mensualidad.
 3. **Cómo cobrar la mensualidad**: link de pago o suscripción de Mercado Pago, transferencia, etc.
-4. **Formulario de relevamiento** para el cliente (Paso 1 del playbook): datos, servicios con precio y duración, profesionales, horarios, seña, fotos, logo, paleta/referencias, dominio que quiere.
+4. **Formulario de relevamiento — hecho el 10/10/2026** en un Claude Doc: https://claude.ai/code/artifact/a6e81fa5-cbed-42c8-94f4-10c4a87ccd33 (copiar uno por cliente). Ojo: pide horario por día, pero hoy la plataforma maneja un solo horario de apertura/cierre para todos los días — si un cliente tiene horarios distintos por día, hay que sumarlo como mejora. Lo que tenía que cubrir: datos, servicios con precio y duración, profesionales, horarios, seña, fotos, logo, paleta/referencias, dominio que quiere.
 
 ### D. El día que llega el cliente
 Seguir `claude/playbook-alta-negocio.md`, que ya contempla dominio propio, diseño a medida y la prueba con un pago real.

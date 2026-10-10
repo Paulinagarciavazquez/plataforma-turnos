@@ -72,7 +72,7 @@ No hace falta ningún deploy nuevo para los datos — el negocio vive en la mism
 | OAuth con Mercado Pago | Conectar con un click (en vez de pegar el Access Token a mano) queda como mejora futura — más importante cuantos más clientes no técnicos haya que onboardear |
 | Soporte y mantenimiento | Definir, aunque sea informalmente, qué pasa cuando algo se rompe para un cliente real: quién lo arregla y en cuánto tiempo |
 | Editar negocio desde el panel | Hoy cambiar nombre, slug o rubro de un negocio requiere SQL directo — anotado como mejora futura |
-| Horarios de pagos rechazados | Si una seña se rechaza, el horario reservado no se libera solo todavía — anotado como mejora futura |
+| Reservas sin pagar | Resuelto (10/10/2026): una reserva sin pagar retiene el horario 30 minutos y después se libera sola; en el panel figura como "Sin pagar (horario liberado)" |
 
 ---
 
