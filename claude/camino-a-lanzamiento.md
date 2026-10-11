@@ -11,7 +11,7 @@ Este doc responde preguntas que se hizo Paulina el 25/09/2026 sobre cómo llevar
 **Nota (07-08/10/2026):** el plan gratuito de Supabase pausa proyectos inactivos por ~7 días. Si el link vuelve a dar "no encontramos este negocio" y no hay nada en el código que lo explique, lo primero a revisar es si el proyecto de Supabase está pausado (entrar a supabase.com → el proyecto → botón "Restore"/"Resume").
 
 **Lo técnico, en orden:**
-1. **Deploy real.** Hecho — repo de GitHub (`Paulinagarciavazquez/plataforma-turnos`) conectado a Vercel, deploy automático en cada `git push origin main`.
+1. **Deploy real.** Hecho — repo de GitHub (`Paulinagarciavazquez/plataforma-turnos`) conectado a Vercel, deploy automático en cada `git push origin main`. **Ojo (11/10/2026):** en Vercel hay dos proyectos con nombre parecido. El real es **`plataforma-turnos-9bcp`** (el de la demo y el que recibe cada deploy): ahí van las variables de entorno (`CRON_SECRET`, `EMAIL_REMITENTE`, etc.) y los dominios. El proyecto `plataforma-turnos` (link `plataforma-turnos-virid.vercel.app`) es un duplicado vacío que da 404 — se puede borrar cuando se confirme que todo anda en 9bcp.
 2. **Dominio.** Resuelto con el subdominio gratuito `plataforma-turnos-9bcp.vercel.app` — ya desbloqueó la vuelta automática de Mercado Pago (ver punto 5). Falta todavía verificar un dominio en Resend (punto 7). Un dominio propio con nombre de marca queda como mejora futura, no urgente.
 3. **Variables de entorno en Vercel**: cargadas las 4 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`).
 4. **`npm install` limpio antes de desplegar.** Hecho — `package-lock.json` regenerado limpio antes del primer deploy.
