@@ -71,6 +71,34 @@ export function generarHorariosInicio(horarioApertura, horarioCierre, duracionMi
   return horarios;
 }
 
+// Horario de atención de un día puntual ("YYYY-MM-DD"): { desde, hasta }
+// ("HH:MM"), o null si ese día de la semana el negocio no atiende.
+// "horarios_por_dia" (jsonb, ej. {"4": {"desde": "09:00", "hasta": "20:00"}},
+// con 0 = domingo como Date.getDay()) permite un horario distinto por día;
+// si un día no figura ahí, vale el horario general (horario_apertura /
+// horario_cierre). Los cierres puntuales (feriados, vacaciones del local)
+// van aparte, en la tabla "cierres_negocio" (ver fechaCerrada).
+export function horarioDelDia(negocio, fechaIso) {
+  const [y, m, d] = fechaIso.split("-").map(Number);
+  const diaSemana = new Date(y, m - 1, d).getDay();
+  return horarioDelDiaSemana(negocio, diaSemana);
+}
+
+export function horarioDelDiaSemana(negocio, diaSemana) {
+  if (!(negocio?.dias_atencion || []).includes(diaSemana)) return null;
+  const propio = negocio.horarios_por_dia?.[String(diaSemana)];
+  return {
+    desde: (propio?.desde || negocio.horario_apertura || "09:00").slice(0, 5),
+    hasta: (propio?.hasta || negocio.horario_cierre || "18:00").slice(0, 5),
+  };
+}
+
+// El cierre del local que cae en esa fecha, si hay alguno (o undefined).
+// "cierres" es una lista de { desde, hasta, motivo } con fechas "YYYY-MM-DD".
+export function fechaCerrada(fechaIso, cierres) {
+  return (cierres || []).find((cierre) => cierre.desde <= fechaIso && fechaIso <= cierre.hasta);
+}
+
 // Devuelve la hora de fin ("HH:MM") de un turno que empieza en "horaInicio"
 // y dura "duracionMinutos".
 export function horaFin(horaInicio, duracionMinutos) {

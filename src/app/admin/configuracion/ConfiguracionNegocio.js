@@ -1,33 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-// 0=domingo, 1=lunes, ..., 6=sábado (mismo criterio que Date.getDay() en JS,
-// usado en el flujo de reserva para decidir qué días mostrar).
-const DIAS = [
-  { valor: 1, etiqueta: "Lunes" },
-  { valor: 2, etiqueta: "Martes" },
-  { valor: 3, etiqueta: "Miércoles" },
-  { valor: 4, etiqueta: "Jueves" },
-  { valor: 5, etiqueta: "Viernes" },
-  { valor: 6, etiqueta: "Sábado" },
-  { valor: 0, etiqueta: "Domingo" },
-];
+// El horario de atención se edita en "Horarios y bloqueos"
+// (src/app/admin/horarios/HorariosYBloqueos.js), no acá.
 
 const COLOR_POR_DEFECTO_PRIMARIO = "#D9A79C";
 const COLOR_POR_DEFECTO_SECUNDARIO = "#3A2E2A";
 
 export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
-  const [horarioApertura, setHorarioApertura] = useState(
-    (negocio.horario_apertura || "09:00").slice(0, 5)
-  );
-  const [horarioCierre, setHorarioCierre] = useState(
-    (negocio.horario_cierre || "18:00").slice(0, 5)
-  );
-  const [diasSeleccionados, setDiasSeleccionados] = useState(
-    negocio.dias_atencion || []
-  );
   const [tipoSena, setTipoSena] = useState(negocio.tipo_sena || "porcentaje");
   const [montoSena, setMontoSena] = useState(
     negocio.porcentaje_o_monto_sena ?? ""
@@ -92,12 +75,6 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     }
   }, [negocio.id]);
 
-  function alternarDia(valor) {
-    setDiasSeleccionados((prev) =>
-      prev.includes(valor) ? prev.filter((d) => d !== valor) : [...prev, valor]
-    );
-  }
-
   async function guardarCambios(e) {
     e.preventDefault();
 
@@ -105,18 +82,10 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
       window.alert("Ingresá el monto o porcentaje de la seña.");
       return;
     }
-    if (diasSeleccionados.length === 0) {
-      window.alert("Seleccioná al menos un día de atención.");
-      return;
-    }
-
     setGuardando(true);
     setMensaje(null);
 
     const cambios = {
-      horario_apertura: horarioApertura,
-      horario_cierre: horarioCierre,
-      dias_atencion: diasSeleccionados,
       tipo_sena: tipoSena,
       porcentaje_o_monto_sena: Number(montoSena),
       texto_bienvenida: textoBienvenida.trim() || null,
@@ -275,42 +244,14 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Horario de atención</h2>
-
-          <div className="flex gap-4 mb-4">
-            <label className="flex-1 text-sm">
-              Apertura
-              <input
-                type="time"
-                value={horarioApertura}
-                onChange={(e) => setHorarioApertura(e.target.value)}
-                className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
-              />
-            </label>
-            <label className="flex-1 text-sm">
-              Cierre
-              <input
-                type="time"
-                value={horarioCierre}
-                onChange={(e) => setHorarioCierre(e.target.value)}
-                className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
-              />
-            </label>
-          </div>
-
-          <p className="text-sm mb-2">Días que atiende</p>
-          <div className="flex flex-wrap gap-3">
-            {DIAS.map((dia) => (
-              <label key={dia.valor} className="flex items-center gap-1 text-sm">
-                <input
-                  type="checkbox"
-                  checked={diasSeleccionados.includes(dia.valor)}
-                  onChange={() => alternarDia(dia.valor)}
-                />
-                {dia.etiqueta}
-              </label>
-            ))}
-          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-1">Horario de atención</h2>
+          <p className="text-sm text-gray-600">
+            Ahora se configura en{" "}
+            <Link href="/admin/horarios" className="underline underline-offset-2">
+              Horarios y bloqueos
+            </Link>
+            , donde cada día puede tener su propio horario.
+          </p>
         </section>
 
         <section>

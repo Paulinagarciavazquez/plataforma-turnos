@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { aIso, horaFin } from "../../lib/horarios";
+import { aIso, horaFin, horarioDelDia, fechaCerrada } from "../../lib/horarios";
 import { reservaSinPagarVencida } from "../../lib/reservas";
 import { colorDeMarca } from "../../lib/marcaNegocio";
 
@@ -161,6 +161,8 @@ export default function Agenda({ negocio }) {
 
   const [reservas, setReservas] = useState([]);
   const [profesionales, setProfesionales] = useState([]);
+  const [cierres, setCierres] = useState([]); // cierres del local (feriados, vacaciones)
+  const [ausencias, setAusencias] = useState([]); // ausencias de cada profesional, una fila por día
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState(null);
   const [recargar, setRecargar] = useState(0);
@@ -178,7 +180,12 @@ export default function Agenda({ negocio }) {
       setCargando(true);
       setErrorCarga(null);
 
-      const [{ data: reservasData, error: errorReservas }, { data: profesionalesData }] = await Promise.all([
+      const [
+        { data: reservasData, error: errorReservas },
+        { data: profesionalesData },
+        { data: cierresData },
+        { data: ausenciasData },
+      ] = await Promise.all([
         supabase
           .from("reservas")
           .select("*, servicios(nombre), profesionales(nombre), sucursales(nombre)")
@@ -191,7 +198,12 @@ export default function Agenda({ negocio }) {
           .select("id, nombre, sucursales(nombre)")
           .eq("negocio_id", negocio.id)
           .order("nombre"),
+        supabase.from("cierres_negocio").select("desde, hasta, motivo").eq("negocio_id", negocio.id),
+        supabase.from("ausencias_profesionales").select("profesional_id, fecha, motivo").eq("negocio_id", negocio.id),
       ]);
+
+      setCierres(cierresData || []);
+      setAusencias(ausenciasData || []);
 
       setCargando(false);
 
@@ -224,9 +236,6 @@ export default function Agenda({ negocio }) {
   }, [aviso]);
 
   // ---- Qué se muestra ----
-  const apertura = minutosDe(negocio.horario_apertura || "09:00");
-  const cierre = Math.max(minutosDe(negocio.horario_cierre || "18:00"), apertura + MINUTOS_CASILLERO);
-  const casilleros = Math.ceil((cierre - apertura) / MINUTOS_CASILLERO);
   const diasAtencion = negocio.dias_atencion?.length ? negocio.dias_atencion : [0, 1, 2, 3, 4, 5, 6];
 
   const lunes = lunesDe(fechaRef);
@@ -234,6 +243,24 @@ export default function Agenda({ negocio }) {
     diasAtencion.includes(diaSemana(iso))
   );
   const diasVista = vista === "dia" ? [fechaRef] : diasSemana;
+
+  // Cada día puede tener su propio horario: la grilla va desde la apertura
+  // más temprana hasta el cierre más tarde de los días que se ven, y fuera
+  // del horario de cada día los casilleros quedan apagados.
+  const horarioGeneral = { desde: negocio.horario_apertura || "09:00", hasta: negocio.horario_cierre || "18:00" };
+  function horarioDe(iso) {
+    return horarioDelDia(negocio, iso) || horarioGeneral;
+  }
+  const horariosVista = diasVista.map(horarioDe);
+  const apertura = Math.min(...horariosVista.map((h) => minutosDe(h.desde)));
+  const cierreGrilla = Math.max(...horariosVista.map((h) => minutosDe(h.hasta)), apertura + MINUTOS_CASILLERO);
+  const casilleros = Math.ceil((cierreGrilla - apertura) / MINUTOS_CASILLERO);
+  function cierreDe(iso) {
+    return minutosDe(horarioDe(iso).hasta);
+  }
+  function ausenciaDe(iso, profesionalId) {
+    return ausencias.find((a) => a.fecha === iso && a.profesional_id === profesionalId);
+  }
 
   const visibles = reservas
     .map((r) => ({ ...r, visual: estadoVisual(r) }))
@@ -295,7 +322,7 @@ export default function Agenda({ negocio }) {
   // ---- Acciones ----
   function abrirHueco(fecha, minutos, profesionalId) {
     // Arranca con 1 h si entra en el hueco; si no, 30 min.
-    const entraUnaHora = minutos + 60 <= cierre && !seSuperpone(fecha, minutos, 60, profesionalId);
+    const entraUnaHora = minutos + 60 <= cierreDe(fecha) && !seSuperpone(fecha, minutos, 60, profesionalId);
     setHueco({ fecha, minutos, profesionalId });
     setDuracionBloqueo(entraUnaHora ? 60 : 30);
     setMotivoBloqueo("");
@@ -557,13 +584,20 @@ export default function Agenda({ negocio }) {
                     Array.from({ length: casilleros }, (_, s) => {
                       const minutos = apertura + s * MINUTOS_CASILLERO;
                       const pasado = iso < hoy || (iso === hoy && minutos < ahoraMinutos);
+                      const horario = horarioDe(iso);
+                      const fueraDeHorario = minutos < minutosDe(horario.desde) || minutos >= minutosDe(horario.hasta);
+                      const noDisponible = fechaCerrada(iso, cierres) || (p.id && ausenciaDe(iso, p.id));
                       const estilo = {
                         gridColumn: columnaDe(i, j),
                         gridRow: filasCabecera + 1 + s,
                         borderLeft: j === 0 ? "1px solid #ECE6E0" : "1px dashed #F1ECE7",
                       };
-                      return pasado ? (
-                        <div key={`${iso}-${p.id}-${s}`} className="border-t border-[#EFEAE5] bg-[#FAF8F6]" style={estilo} />
+                      return pasado || fueraDeHorario || noDisponible ? (
+                        <div
+                          key={`${iso}-${p.id}-${s}`}
+                          className={`border-t border-[#EFEAE5] ${fueraDeHorario || noDisponible ? "bg-[#F1EEEA]" : "bg-[#FAF8F6]"}`}
+                          style={estilo}
+                        />
                       ) : (
                         <button
                           key={`${iso}-${p.id}-${s}`}
@@ -577,6 +611,39 @@ export default function Agenda({ negocio }) {
                     })
                   )
                 )}
+                {/* Carteles de día cerrado / profesional ausente */}
+                {diasVista.map((iso, i) => {
+                  const cerrado = fechaCerrada(iso, cierres);
+                  if (cerrado) {
+                    return (
+                      <div
+                        key={`cerrado-${iso}`}
+                        className="pointer-events-none z-10 m-0.5 flex items-start justify-center rounded-lg px-2 pt-3 text-center text-xs text-[#5B5451]"
+                        style={{ gridColumn: `${columnaDe(i, 0)} / span ${L}`, gridRow: `${filasCabecera + 1} / span ${casilleros}` }}
+                      >
+                        <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                          Cerrado{cerrado.motivo ? ` · ${cerrado.motivo}` : ""}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return carriles.map((p, j) => {
+                    const ausencia = p.id && ausenciaDe(iso, p.id);
+                    if (!ausencia) return null;
+                    return (
+                      <div
+                        key={`ausente-${iso}-${p.id}`}
+                        className="pointer-events-none z-10 m-0.5 flex items-start justify-center px-1 pt-3 text-center text-xs text-[#5B5451]"
+                        style={{ gridColumn: columnaDe(i, j), gridRow: `${filasCabecera + 1} / span ${casilleros}` }}
+                      >
+                        <span className="rounded-full bg-white px-2.5 py-1 shadow-sm">
+                          {L > 1 ? "Ausente" : `${p.nombre} ausente`}
+                          {ausencia.motivo ? ` · ${ausencia.motivo}` : ""}
+                        </span>
+                      </div>
+                    );
+                  });
+                })}
                 {/* Turnos */}
                 {eventos.map(({ r, columna, fila, largo }) => {
                   const estilo = {
@@ -627,7 +694,8 @@ export default function Agenda({ negocio }) {
           <div className="grid grid-cols-7 gap-1.5">
             {celdasMes.map((iso, k) => {
               if (!iso) return <div key={`vacio-${k}`} />;
-              const cerrado = !diasAtencion.includes(diaSemana(iso));
+              const cierre = fechaCerrada(iso, cierres);
+              const cerrado = !diasAtencion.includes(diaSemana(iso)) || Boolean(cierre);
               const cantidad = visibles.filter(
                 (r) => r.fecha === iso && r.visual !== "bloqueo" && (filtroProf === "todas" || r.profesional_id === filtroProf)
               ).length;
@@ -646,7 +714,9 @@ export default function Agenda({ negocio }) {
                   <span className={`font-semibold ${iso === hoy ? "rounded-full px-1.5 text-white" : ""}`} style={iso === hoy ? { backgroundColor: color } : undefined}>
                     {aFecha(iso).getDate()}
                   </span>
-                  <span>{cerrado ? "Cerrado" : cantidad ? `${cantidad} ${cantidad === 1 ? "turno" : "turnos"}` : ""}</span>
+                  <span className="line-clamp-2">
+                    {cerrado ? (cierre?.motivo ? `Cerrado · ${cierre.motivo}` : "Cerrado") : cantidad ? `${cantidad} ${cantidad === 1 ? "turno" : "turnos"}` : ""}
+                  </span>
                 </button>
               );
             })}
@@ -770,10 +840,10 @@ export default function Agenda({ negocio }) {
                 [60, "1 h"],
                 [90, "1 h 30"],
                 [120, "2 h"],
-                [cierre - hueco.minutos, "Hasta el cierre"],
+                [cierreDe(hueco.fecha) - hueco.minutos, "Hasta el cierre"],
               ].map(([minutos, label]) => {
                 const noEntra =
-                  hueco.minutos + minutos > cierre ||
+                  hueco.minutos + minutos > cierreDe(hueco.fecha) ||
                   seSuperpone(hueco.fecha, hueco.minutos, minutos, hueco.profesionalId);
                 return (
                   <Pastilla
@@ -800,7 +870,7 @@ export default function Agenda({ negocio }) {
             />
           </label>
           {seSuperpone(hueco.fecha, hueco.minutos, duracionBloqueo, hueco.profesionalId) ||
-          hueco.minutos + duracionBloqueo > cierre ? (
+          hueco.minutos + duracionBloqueo > cierreDe(hueco.fecha) ? (
             <p className="text-[13px] text-red-700">Esa duración se superpone con otro turno. Elegí una más corta.</p>
           ) : null}
           <div className="flex flex-wrap gap-2.5">
@@ -808,7 +878,7 @@ export default function Agenda({ negocio }) {
               type="button"
               disabled={
                 guardando ||
-                hueco.minutos + duracionBloqueo > cierre ||
+                hueco.minutos + duracionBloqueo > cierreDe(hueco.fecha) ||
                 seSuperpone(hueco.fecha, hueco.minutos, duracionBloqueo, hueco.profesionalId)
               }
               onClick={bloquear}

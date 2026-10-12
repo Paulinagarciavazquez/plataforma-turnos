@@ -2,7 +2,13 @@
 
 import { use, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { generarProximosDias, generarHorariosInicio, filtrarHorariosLibres } from "../../lib/horarios";
+import {
+  generarProximosDias,
+  generarHorariosInicio,
+  filtrarHorariosLibres,
+  horarioDelDia,
+  fechaCerrada,
+} from "../../lib/horarios";
 import { formatearFechaCorta } from "../../lib/formatearFecha";
 import { calcularMontoSena } from "../../lib/reservas";
 import SkinPilotoByOlivia from "./SkinPilotoByOlivia";
@@ -117,26 +123,35 @@ export default function ReservaNegocio({ params }) {
 
     const todosLosDias = generarProximosDias(datosNegocio.dias_atencion);
 
-    if (!profesional) {
-      setDiasDisponibles(todosLosDias);
-      setCargandoDias(false);
-      return;
+    // Sacamos de la lista los días en que el local cierra (feriados,
+    // vacaciones del local) y, si ya sabemos quién atiende, los días en que
+    // esa profesional tiene una ausencia cargada.
+    const [{ data: cierres, error: errorCierres }, { data: ausencias, error: errorAusencias }] = await Promise.all([
+      supabase
+        .from("cierres_negocio")
+        .select("desde, hasta")
+        .eq("negocio_id", datosNegocio.id)
+        .gte("hasta", todosLosDias[0]?.iso || "0000-00-00"),
+      profesional
+        ? supabase
+            .from("ausencias_profesionales")
+            .select("fecha")
+            .eq("negocio_id", datosNegocio.id)
+            .eq("profesional_id", profesional.id)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    if (errorCierres) {
+      console.error("Error cargando cierres del negocio:", errorCierres);
     }
-
-    // Si la profesional tiene alguna ausencia cargada (no puede trabajar tal
-    // día), sacamos esos días de la lista para que no se puedan elegir.
-    const { data: ausencias, error } = await supabase
-      .from("ausencias_profesionales")
-      .select("fecha")
-      .eq("negocio_id", datosNegocio.id)
-      .eq("profesional_id", profesional.id);
-
-    if (error) {
-      console.error("Error cargando ausencias del profesional:", error);
+    if (errorAusencias) {
+      console.error("Error cargando ausencias del profesional:", errorAusencias);
     }
 
     const fechasAusente = new Set((ausencias || []).map((a) => a.fecha));
-    setDiasDisponibles(todosLosDias.filter((dia) => !fechasAusente.has(dia.iso)));
+    setDiasDisponibles(
+      todosLosDias.filter((dia) => !fechasAusente.has(dia.iso) && !fechaCerrada(dia.iso, cierres))
+    );
     setCargandoDias(false);
   };
 
@@ -181,11 +196,11 @@ export default function ReservaNegocio({ params }) {
     setPantallaActual("horario");
 
     const duracionServicio = elecciones.servicio.duracion_minutos;
-    const horariosInicioPosibles = generarHorariosInicio(
-      datosNegocio.horario_apertura,
-      datosNegocio.horario_cierre,
-      duracionServicio
-    );
+    // Cada día puede tener su propio horario (ver horarioDelDia).
+    const horario = horarioDelDia(datosNegocio, fechaIso);
+    const horariosInicioPosibles = horario
+      ? generarHorariosInicio(horario.desde, horario.hasta, duracionServicio)
+      : [];
 
     if (!elecciones.profesional) {
       // No pudimos determinar un profesional puntual (caso borde: servicio sin

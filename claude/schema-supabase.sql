@@ -473,6 +473,8 @@ where estado = 'confirmada'
 
 grant select on public.turnos_ocupados to anon, authenticated;
 
+-- (ver más abajo la migración del 12/10/2026: horario por día y cierres)
+
 -- 2) Un visitante anónimo solo puede crear reservas "pendiente_pago" (antes
 --    podía crearlas ya "confirmada", sin pagar). La dueña sigue pudiendo
 --    crear bloqueos manuales (confirmados) para su propio negocio.
@@ -490,5 +492,55 @@ create policy "reservas_insert_publico"
     or exists (
       select 1 from public.negocios n
       where n.id = reservas.negocio_id and n.owner_id = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- MIGRACIÓN: horario por día y cierres del local (12/10/2026)
+-- ============================================================
+-- Paso 4 del rediseño del panel ("Horarios y bloqueos").
+--
+-- 1) Un horario distinto para cada día de la semana. Formato:
+--    {"1": {"desde": "09:00", "hasta": "18:00"}, "6": {"desde": "10:00", "hasta": "14:00"}}
+--    (claves = día de la semana, 0 = domingo como Date.getDay()). Un día que
+--    no figura usa horario_apertura / horario_cierre; qué días atiende lo
+--    sigue diciendo dias_atencion. Ver horarioDelDia en src/lib/horarios.js.
+alter table public.negocios
+  add column if not exists horarios_por_dia jsonb;
+
+-- 2) Feriados y cierres del local (nadie puede reservar esos días).
+create table if not exists public.cierres_negocio (
+  id uuid primary key default gen_random_uuid(),
+  negocio_id uuid not null references public.negocios(id) on delete cascade,
+  desde date not null,
+  hasta date not null,
+  motivo text,
+  creado_en timestamptz not null default now(),
+  check (hasta >= desde)
+);
+
+create index if not exists idx_cierres_negocio_negocio_id on public.cierres_negocio(negocio_id);
+
+alter table public.cierres_negocio enable row level security;
+
+-- Lectura pública: la necesita el flujo de reserva (sin login).
+drop policy if exists "cierres_select_publico" on public.cierres_negocio;
+create policy "cierres_select_publico"
+  on public.cierres_negocio for select
+  using (true);
+
+drop policy if exists "cierres_admin_propio" on public.cierres_negocio;
+create policy "cierres_admin_propio"
+  on public.cierres_negocio for all
+  using (
+    exists (
+      select 1 from public.negocios n
+      where n.id = cierres_negocio.negocio_id and n.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.negocios n
+      where n.id = cierres_negocio.negocio_id and n.owner_id = auth.uid()
     )
   );
