@@ -3,7 +3,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+function formatearPrecio(precio) {
+  return `$${Number(precio || 0).toLocaleString("es-AR")}`;
+}
+
+function formatearDuracion(minutos) {
+  const m = Number(minutos || 0);
+  if (m < 60) return `${m} min`;
+  return m % 60 ? `${Math.floor(m / 60)} h ${m % 60}` : `${m / 60} h`;
+}
+
+const SIN_CATEGORIA = "Sin categoría";
+
 export default function GestionServicios({ negocio }) {
+  const [formNuevoAbierto, setFormNuevoAbierto] = useState(false);
   const [profesionales, setProfesionales] = useState([]);
   const [servicios, setServicios] = useState([]);
   const [sucursales, setSucursales] = useState([]);
@@ -188,6 +201,7 @@ export default function GestionServicios({ negocio }) {
       duracion_minutos: "",
       categoria: "",
     });
+    setFormNuevoAbierto(false);
     recargarDatos();
   }
 
@@ -305,28 +319,44 @@ export default function GestionServicios({ negocio }) {
   }
 
   if (cargando) {
-    return <p className="text-sm text-gray-500">Cargando...</p>;
+    return <p className="text-sm text-[#6B6461]">Cargando...</p>;
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-700">{error}</p>;
   }
+
+  // Si algún servicio tiene categoría, se muestran agrupados (igual que las
+  // pestañas que ve el cliente al reservar); si no, en una sola lista.
+  const hayCategorias = servicios.some((s) => s.categoria?.trim());
+  const grupos = hayCategorias
+    ? Object.entries(
+        servicios.reduce((acc, s) => {
+          const categoria = s.categoria?.trim() || SIN_CATEGORIA;
+          (acc[categoria] ||= []).push(s);
+          return acc;
+        }, {})
+      ).sort(([a], [b]) => (a === SIN_CATEGORIA ? 1 : b === SIN_CATEGORIA ? -1 : a.localeCompare(b)))
+    : [["", servicios]];
 
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Profesionales</h2>
+        <h2 className="text-lg font-semibold text-[#1E1B1A]">Equipo</h2>
+        <p className="mb-3 text-sm text-[#6B6461]">
+          Quiénes atienden.{sucursales.length > 0 ? " Elegí en qué sucursal trabaja cada una." : ""}
+        </p>
 
         <ul className="mb-4 space-y-1">
           {profesionales.length === 0 && (
-            <li className="text-gray-500 text-sm">
+            <li className="text-[#6B6461] text-sm">
               Todavía no hay profesionales cargados.
             </li>
           )}
           {profesionales.map((p) => (
             <li
               key={p.id}
-              className="flex items-center justify-between border border-violet-200 bg-white rounded-xl px-3 py-2"
+              className="flex items-center justify-between border border-[#DCD5CE] bg-white rounded-xl px-3 py-2"
             >
               <div className="flex flex-1 items-center gap-3">
                 <span>{p.nombre}</span>
@@ -334,7 +364,7 @@ export default function GestionServicios({ negocio }) {
                   <select
                     value={p.sucursal_id || ""}
                     onChange={(e) => asignarSucursalProfesional(p.id, e.target.value)}
-                    className="border border-violet-200 bg-white rounded-full px-3 py-1 text-xs text-gray-600 focus:border-violet-400 focus:outline-none transition"
+                    className="border border-[#DCD5CE] bg-white rounded-full px-3 py-1 text-xs text-[#5B5451] focus:border-[#1E1B1A] focus:outline-none transition"
                   >
                     <option value="">Todas las sucursales</option>
                     {sucursales.map((s) => (
@@ -347,7 +377,7 @@ export default function GestionServicios({ negocio }) {
               </div>
               <button
                 onClick={() => eliminarProfesional(p.id)}
-                className="text-red-600 text-sm hover:underline"
+                className="text-red-700 text-sm hover:underline"
               >
                 Eliminar
               </button>
@@ -358,15 +388,15 @@ export default function GestionServicios({ negocio }) {
         <form onSubmit={agregarProfesional} className="flex gap-2">
           <input
             type="text"
-            placeholder="Nombre del profesional"
+            placeholder="Nombre (como lo ven tus clientes)"
             value={nombreProfesional}
             onChange={(e) => setNombreProfesional(e.target.value)}
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
           />
           <button
             type="submit"
             disabled={guardandoProfesional}
-            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+            className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
           >
             {guardandoProfesional ? "Guardando..." : "Agregar"}
           </button>
@@ -374,16 +404,114 @@ export default function GestionServicios({ negocio }) {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Servicios</h2>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-[#1E1B1A]">Servicios</h2>
+            <p className="text-sm text-[#6B6461]">Lo que tus clientes pueden reservar, y quién hace cada uno.</p>
+          </div>
+          {!formNuevoAbierto && (
+            <button
+              type="button"
+              onClick={() => setFormNuevoAbierto(true)}
+              className="min-h-10 rounded-full border border-[#DCD5CE] px-4 text-sm"
+            >
+              + Agregar servicio
+            </button>
+          )}
+        </div>
 
-        <div className="space-y-4 mb-6">
+        {formNuevoAbierto && (
+        <form onSubmit={agregarServicio} className="mb-6 space-y-2 rounded-xl bg-[#F6F4F1] p-4">
+          <p className="font-medium text-sm mb-1">Servicio nuevo</p>
+          <input
+            type="text"
+            placeholder="Nombre"
+            value={nuevoServicio.nombre}
+            onChange={(e) =>
+              setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })
+            }
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
+          />
+          <input
+            type="text"
+            placeholder="Descripción (opcional)"
+            value={nuevoServicio.descripcion}
+            onChange={(e) =>
+              setNuevoServicio({ ...nuevoServicio, descripcion: e.target.value })
+            }
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
+          />
+          <input
+            type="text"
+            list="categorias-existentes"
+            placeholder="Categoría (opcional, ej: Manos, Pies, Combos)"
+            value={nuevoServicio.categoria}
+            onChange={(e) =>
+              setNuevoServicio({ ...nuevoServicio, categoria: e.target.value })
+            }
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
+          />
+          <div className="flex gap-2">
+            <input
+              type="number"
+              placeholder="Precio ($)"
+              value={nuevoServicio.precio}
+              onChange={(e) =>
+                setNuevoServicio({ ...nuevoServicio, precio: e.target.value })
+              }
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
+            />
+            <input
+              type="number"
+              step="15"
+              placeholder="Duración (min)"
+              value={nuevoServicio.duracion_minutos}
+              onChange={(e) =>
+                setNuevoServicio({
+                  ...nuevoServicio,
+                  duracion_minutos: e.target.value,
+                })
+              }
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="submit"
+              disabled={guardandoServicio}
+              className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
+            >
+              {guardandoServicio ? "Guardando..." : "Agregar servicio"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormNuevoAbierto(false)}
+              className="min-h-11 rounded-full border border-[#DCD5CE] bg-white px-5"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+        )}
+        <datalist id="categorias-existentes">
+          {[...new Set(servicios.map((s) => s.categoria?.trim()).filter(Boolean))].map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
+
+        <div className="space-y-6">
           {servicios.length === 0 && (
-            <p className="text-gray-500 text-sm">
+            <p className="text-[#6B6461] text-sm">
               Todavía no hay servicios cargados.
             </p>
           )}
-          {servicios.map((s) => (
-            <div key={s.id} className="border border-violet-100 bg-white rounded-xl px-3 py-3 shadow-sm shadow-violet-100/40">
+          {grupos.map(([categoria, serviciosDelGrupo]) => (
+          <div key={categoria || "todos"} className="space-y-3">
+          {categoria && (
+            <h3 className="text-xs font-semibold uppercase tracking-[0.08em] text-[#6B6461]">{categoria}</h3>
+          )}
+          {serviciosDelGrupo.map((s) => (
+            <div key={s.id} className="border border-[#ECE6E0] bg-white rounded-xl px-4 py-3">
               {edicionServicioId === s.id ? (
                 <form onSubmit={guardarEdicionServicio} className="space-y-2 mb-2">
                   <input
@@ -393,7 +521,7 @@ export default function GestionServicios({ negocio }) {
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, nombre: e.target.value })
                     }
-                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                    className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                   />
                   <input
                     type="text"
@@ -402,16 +530,17 @@ export default function GestionServicios({ negocio }) {
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, descripcion: e.target.value })
                     }
-                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                    className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                   />
                   <input
                     type="text"
                     placeholder="Categoría (opcional, ej: Manos, Pies, Combos)"
+                    list="categorias-existentes"
                     value={edicionServicio.categoria}
                     onChange={(e) =>
                       setEdicionServicio({ ...edicionServicio, categoria: e.target.value })
                     }
-                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                    className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                   />
                   <div className="flex gap-2">
                     <input
@@ -421,7 +550,7 @@ export default function GestionServicios({ negocio }) {
                       onChange={(e) =>
                         setEdicionServicio({ ...edicionServicio, precio: e.target.value })
                       }
-                      className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
+                      className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
                     />
                     <input
                       type="number"
@@ -433,41 +562,36 @@ export default function GestionServicios({ negocio }) {
                           duracion_minutos: e.target.value,
                         })
                       }
-                      className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
+                      className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
                       type="submit"
                       disabled={guardandoEdicionServicio}
-                      className="bg-violet-600 text-white rounded-full px-4 py-2 text-sm shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+                      className="bg-[#1E1B1A] text-white font-semibold rounded-full px-4 min-h-10 text-sm hover:bg-black transition disabled:opacity-50"
                     >
                       {guardandoEdicionServicio ? "Guardando..." : "Guardar"}
                     </button>
                     <button
                       type="button"
                       onClick={cancelarEdicionServicio}
-                      className="text-sm text-gray-500 hover:underline"
+                      className="text-sm text-[#6B6461] hover:underline"
                     >
                       Cancelar
                     </button>
                   </div>
                 </form>
               ) : (
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    {s.categoria && (
-                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                        {s.categoria}
-                      </p>
-                    )}
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="min-w-0">
                     <p className="font-medium">{s.nombre}</p>
-                    <p className="text-sm text-gray-500">
-                      ${s.precio} · {s.duracion_minutos} min
-                      {s.descripcion ? ` · ${s.descripcion}` : ""}
+                    <p className="text-sm text-[#3B3532]">
+                      {formatearPrecio(s.precio)} · {formatearDuracion(s.duracion_minutos)}
                     </p>
+                    {s.descripcion && <p className="text-sm text-[#6B6461]">{s.descripcion}</p>}
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex shrink-0 gap-3">
                     <button
                       onClick={() => comenzarEdicionServicio(s)}
                       className="text-sm hover:underline"
@@ -476,7 +600,7 @@ export default function GestionServicios({ negocio }) {
                     </button>
                     <button
                       onClick={() => eliminarServicio(s.id)}
-                      className="text-red-600 text-sm hover:underline"
+                      className="text-red-700 text-sm hover:underline"
                     >
                       Eliminar
                     </button>
@@ -485,14 +609,16 @@ export default function GestionServicios({ negocio }) {
               )}
 
               {profesionales.length > 0 && (
-                <div className="flex flex-wrap gap-3 mt-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+                  <span className="text-sm text-[#6B6461]">Lo hacen:</span>
                   {profesionales.map((p) => (
                     <label
                       key={p.id}
-                      className="flex items-center gap-1 text-sm"
+                      className="flex min-h-9 items-center gap-1.5 text-sm"
                     >
                       <input
                         type="checkbox"
+                        className="h-4 w-4 accent-[#1E1B1A]"
                         checked={estaVinculado(s.id, p.id)}
                         onChange={(e) =>
                           alternarVinculo(s.id, p.id, e.target.checked)
@@ -505,68 +631,9 @@ export default function GestionServicios({ negocio }) {
               )}
             </div>
           ))}
-        </div>
-
-        <form onSubmit={agregarServicio} className="space-y-2 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40">
-          <p className="font-medium text-sm mb-1">Agregar servicio nuevo</p>
-          <input
-            type="text"
-            placeholder="Nombre"
-            value={nuevoServicio.nombre}
-            onChange={(e) =>
-              setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })
-            }
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
-          />
-          <input
-            type="text"
-            placeholder="Descripción (opcional)"
-            value={nuevoServicio.descripcion}
-            onChange={(e) =>
-              setNuevoServicio({ ...nuevoServicio, descripcion: e.target.value })
-            }
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
-          />
-          <input
-            type="text"
-            placeholder="Categoría (opcional, ej: Manos, Pies, Combos)"
-            value={nuevoServicio.categoria}
-            onChange={(e) =>
-              setNuevoServicio({ ...nuevoServicio, categoria: e.target.value })
-            }
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
-          />
-          <div className="flex gap-2">
-            <input
-              type="number"
-              placeholder="Precio"
-              value={nuevoServicio.precio}
-              onChange={(e) =>
-                setNuevoServicio({ ...nuevoServicio, precio: e.target.value })
-              }
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
-            />
-            <input
-              type="number"
-              placeholder="Duración (min)"
-              value={nuevoServicio.duracion_minutos}
-              onChange={(e) =>
-                setNuevoServicio({
-                  ...nuevoServicio,
-                  duracion_minutos: e.target.value,
-                })
-              }
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
-            />
           </div>
-          <button
-            type="submit"
-            disabled={guardandoServicio}
-            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
-          >
-            {guardandoServicio ? "Guardando..." : "Agregar servicio"}
-          </button>
-        </form>
+          ))}
+        </div>
       </section>
     </div>
   );

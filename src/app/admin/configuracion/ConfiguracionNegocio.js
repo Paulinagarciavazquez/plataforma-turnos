@@ -43,7 +43,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
   const [tieneWebhookConfigurado, setTieneWebhookConfigurado] = useState(false);
   const [guardandoWebhook, setGuardandoWebhook] = useState(false);
   const [mensajeWebhook, setMensajeWebhook] = useState(null);
-  const [urlWebhook, setUrlWebhook] = useState("");
+  // La URL del webhook depende del dominio desde el que se abre el panel
+  // (window.location.origin). Esta pantalla se monta recién con la sesión
+  // cargada, siempre en el navegador, así que se puede calcular de entrada.
+  const urlWebhook =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/webhooks/mercadopago?negocioId=${negocio.id}`
+      : "";
 
   // El access token (y la clave del webhook) de Mercado Pago viven en una
   // tabla aparte ("negocios_pagos"), no en "negocios": esa tabla es de
@@ -65,14 +71,6 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     }
 
     cargarPago();
-  }, [negocio.id]);
-
-  // La URL del webhook depende del dominio desde el que se abre el panel
-  // (window.location.origin), así que se arma del lado del cliente.
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setUrlWebhook(`${window.location.origin}/api/webhooks/mercadopago?negocioId=${negocio.id}`);
-    }
   }, [negocio.id]);
 
   async function guardarCambios(e) {
@@ -173,7 +171,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     <div className="space-y-8 max-w-lg">
       <form onSubmit={guardarCambios} className="space-y-8">
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Identidad visual</h2>
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-3">Identidad visual</h2>
 
           <label className="block text-sm mb-4">
             Texto de bienvenida
@@ -182,7 +180,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               onChange={(e) => setTextoBienvenida(e.target.value)}
               placeholder="Ej: Reservá tu turno en un par de clics."
               rows={3}
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
             />
           </label>
 
@@ -194,13 +192,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                   type="color"
                   value={colorPrimario}
                   onChange={(e) => setColorPrimario(e.target.value)}
-                  className="h-10 w-12 border border-violet-200 rounded-xl shrink-0"
+                  className="h-10 w-12 border border-[#DCD5CE] rounded-xl shrink-0"
                 />
                 <input
                   type="text"
                   value={colorPrimario}
                   onChange={(e) => setColorPrimario(e.target.value)}
-                  className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                  className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                 />
               </div>
             </label>
@@ -211,13 +209,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
                   type="color"
                   value={colorSecundario}
                   onChange={(e) => setColorSecundario(e.target.value)}
-                  className="h-10 w-12 border border-violet-200 rounded-xl shrink-0"
+                  className="h-10 w-12 border border-[#DCD5CE] rounded-xl shrink-0"
                 />
                 <input
                   type="text"
                   value={colorSecundario}
                   onChange={(e) => setColorSecundario(e.target.value)}
-                  className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                  className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                 />
               </div>
             </label>
@@ -230,7 +228,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder="https://..."
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
             />
           </label>
           {logoUrl && (
@@ -244,8 +242,8 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">Horario de atención</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Horario de atención</h2>
+          <p className="text-sm text-[#5B5451]">
             Ahora se configura en{" "}
             <Link href="/admin/horarios" className="underline underline-offset-2">
               Horarios y bloqueos
@@ -255,7 +253,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Seña</h2>
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-3">Seña</h2>
 
           <div className="flex gap-4 mb-3 text-sm">
             <label className="flex items-center gap-1">
@@ -283,13 +281,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
             placeholder={tipoSena === "porcentaje" ? "Ej: 30 (%)" : "Ej: 2000 ($)"}
             value={montoSena}
             onChange={(e) => setMontoSena(e.target.value)}
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
           />
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">Notificaciones</h2>
-          <p className="text-sm text-gray-500 mb-3">
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Notificaciones</h2>
+          <p className="text-sm text-[#6B6461] mb-3">
             A este email te avisamos cada vez que se confirma un turno pagado.
           </p>
           <label className="block text-sm">
@@ -299,13 +297,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               value={emailNotificaciones}
               onChange={(e) => setEmailNotificaciones(e.target.value)}
               placeholder="tuemail@ejemplo.com"
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full mt-1"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
             />
           </label>
         </section>
 
         {mensaje && (
-          <p className={mensaje.tipo === "error" ? "text-sm text-red-600" : "text-sm text-green-600"}>
+          <p className={mensaje.tipo === "error" ? "text-sm text-red-700" : "text-sm text-green-600"}>
             {mensaje.texto}
           </p>
         )}
@@ -313,15 +311,15 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         <button
           type="submit"
           disabled={guardando}
-          className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+          className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
         >
           {guardando ? "Guardando..." : "Guardar cambios"}
         </button>
       </form>
 
       <section className="border-t pt-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Mercado Pago</h2>
-        <p className="text-sm text-gray-500 mb-3">
+        <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Mercado Pago</h2>
+        <p className="text-sm text-[#6B6461] mb-3">
           {cargandoPago
             ? "Verificando..."
             : tienePagoConfigurado
@@ -334,12 +332,12 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
             placeholder="Access Token (TEST-... o APP_USR-...)"
             value={mercadopagoAccessToken}
             onChange={(e) => setMercadopagoAccessToken(e.target.value)}
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
           />
           <button
             type="submit"
             disabled={guardandoPago}
-            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+            className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
           >
             {guardandoPago ? "Guardando..." : "Guardar"}
           </button>
@@ -347,7 +345,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
         {mensajePago && (
           <p
             className={
-              mensajePago.tipo === "error" ? "text-sm text-red-600 mt-2" : "text-sm text-green-600 mt-2"
+              mensajePago.tipo === "error" ? "text-sm text-red-700 mt-2" : "text-sm text-green-600 mt-2"
             }
           >
             {mensajePago.texto}
@@ -356,16 +354,16 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
 
         <div className="mt-6 pt-6 border-t border-dashed">
           <h3 className="font-medium mb-1">Webhook (aviso automático de pagos)</h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-[#6B6461] mb-2">
             Para que Mercado Pago te avise apenas se aprueba un pago (sin depender de que el
             cliente vuelva a la web), cargá esta URL en tu panel de Mercado Pago: <strong>Tus
             integraciones → tu aplicación → Webhooks → Configurar notificaciones</strong>, y
             tildá el evento &quot;Pagos&quot;.
           </p>
-          <div className="bg-gray-100 rounded px-2 py-2 text-xs font-mono break-all mb-3">
+          <div className="bg-[#F6F4F1] rounded-lg px-3 py-2 text-xs font-mono break-all mb-3">
             {urlWebhook}
           </div>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-[#6B6461] mb-2">
             {cargandoPago
               ? "Verificando..."
               : tieneWebhookConfigurado
@@ -378,12 +376,12 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
               placeholder="Clave secreta del webhook"
               value={mercadopagoWebhookSecret}
               onChange={(e) => setMercadopagoWebhookSecret(e.target.value)}
-              className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition flex-1"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition flex-1 min-w-0"
             />
             <button
               type="submit"
               disabled={guardandoWebhook}
-              className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+              className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
             >
               {guardandoWebhook ? "Guardando..." : "Guardar"}
             </button>
@@ -391,7 +389,7 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
           {mensajeWebhook && (
             <p
               className={
-                mensajeWebhook.tipo === "error" ? "text-sm text-red-600 mt-2" : "text-sm text-green-600 mt-2"
+                mensajeWebhook.tipo === "error" ? "text-sm text-red-700 mt-2" : "text-sm text-green-600 mt-2"
               }
             >
               {mensajeWebhook.texto}

@@ -123,18 +123,18 @@ export default function GestionSucursales({ negocio }) {
   }
 
   if (cargando) {
-    return <p className="text-sm text-gray-500">Cargando...</p>;
+    return <p className="text-sm text-[#6B6461]">Cargando...</p>;
   }
 
   if (error) {
-    return <p className="text-sm text-red-600">{error}</p>;
+    return <p className="text-sm text-red-700">{error}</p>;
   }
 
   return (
     <div className="space-y-6">
       <section>
-        <h2 className="text-lg font-semibold text-gray-900 mb-1">Sucursales</h2>
-        <p className="text-sm text-gray-500 mb-3">
+        <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Sucursales</h2>
+        <p className="text-sm text-[#6B6461] mb-3">
           {sucursales.length <= 1
             ? "Con una sola sucursal (o ninguna), tus clientes no ven el paso de elegir sucursal al reservar. En cuanto cargues una segunda, ese paso aparece automáticamente."
             : "Tus clientes van a tener que elegir sucursal al reservar."}
@@ -142,10 +142,10 @@ export default function GestionSucursales({ negocio }) {
 
         <ul className="mb-4 space-y-2">
           {sucursales.length === 0 && (
-            <li className="text-gray-500 text-sm">Todavía no hay sucursales cargadas.</li>
+            <li className="text-[#6B6461] text-sm">Todavía no hay sucursales cargadas.</li>
           )}
           {sucursales.map((s) => (
-            <li key={s.id} className="border border-violet-100 bg-white rounded-xl px-3 py-3 shadow-sm shadow-violet-100/40">
+            <li key={s.id} className="border border-[#ECE6E0] bg-white rounded-xl px-3 py-3 ">
               {edicionId === s.id ? (
                 <form onSubmit={guardarEdicion} className="space-y-2">
                   <input
@@ -155,7 +155,7 @@ export default function GestionSucursales({ negocio }) {
                     onChange={(e) =>
                       setEdicionSucursal({ ...edicionSucursal, nombre: e.target.value })
                     }
-                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                    className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                   />
                   <input
                     type="text"
@@ -164,20 +164,20 @@ export default function GestionSucursales({ negocio }) {
                     onChange={(e) =>
                       setEdicionSucursal({ ...edicionSucursal, direccion: e.target.value })
                     }
-                    className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+                    className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
                   />
                   <div className="flex gap-3">
                     <button
                       type="submit"
                       disabled={guardandoEdicion}
-                      className="bg-violet-600 text-white rounded-full px-4 py-2 text-sm shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+                      className="bg-[#1E1B1A] text-white font-semibold rounded-full px-4 min-h-10 text-sm hover:bg-black transition disabled:opacity-50"
                     >
                       {guardandoEdicion ? "Guardando..." : "Guardar"}
                     </button>
                     <button
                       type="button"
                       onClick={cancelarEdicion}
-                      className="text-sm text-gray-500 hover:underline"
+                      className="text-sm text-[#6B6461] hover:underline"
                     >
                       Cancelar
                     </button>
@@ -187,7 +187,7 @@ export default function GestionSucursales({ negocio }) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{s.nombre}</p>
-                    {s.direccion && <p className="text-sm text-gray-500">{s.direccion}</p>}
+                    {s.direccion && <p className="text-sm text-[#6B6461]">{s.direccion}</p>}
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => comenzarEdicion(s)} className="text-sm hover:underline">
@@ -195,7 +195,7 @@ export default function GestionSucursales({ negocio }) {
                     </button>
                     <button
                       onClick={() => eliminarSucursal(s.id)}
-                      className="text-red-600 text-sm hover:underline"
+                      className="text-red-700 text-sm hover:underline"
                     >
                       Eliminar
                     </button>
@@ -206,26 +206,26 @@ export default function GestionSucursales({ negocio }) {
           ))}
         </ul>
 
-        <form onSubmit={agregarSucursal} className="space-y-2 border border-violet-100 bg-white rounded-xl p-3 shadow-sm shadow-violet-100/40">
+        <form onSubmit={agregarSucursal} className="space-y-2 border border-[#ECE6E0] bg-white rounded-xl p-3 ">
           <p className="font-medium text-sm mb-1">Agregar sucursal nueva</p>
           <input
             type="text"
             placeholder="Nombre (ej: Sucursal Centro)"
             value={nuevaSucursal.nombre}
             onChange={(e) => setNuevaSucursal({ ...nuevaSucursal, nombre: e.target.value })}
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
           />
           <input
             type="text"
             placeholder="Dirección (opcional)"
             value={nuevaSucursal.direccion}
             onChange={(e) => setNuevaSucursal({ ...nuevaSucursal, direccion: e.target.value })}
-            className="border border-violet-200 bg-white rounded-xl px-3 py-2 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition w-full"
+            className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
           />
           <button
             type="submit"
             disabled={guardandoSucursal}
-            className="bg-violet-600 text-white rounded-full px-5 py-2.5 shadow-sm hover:bg-violet-700 transition disabled:opacity-50"
+            className="bg-[#1E1B1A] text-white font-semibold rounded-full px-5 min-h-11 hover:bg-black transition disabled:opacity-50"
           >
             {guardandoSucursal ? "Guardando..." : "Agregar sucursal"}
           </button>
