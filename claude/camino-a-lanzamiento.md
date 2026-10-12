@@ -11,7 +11,7 @@ Este doc responde preguntas que se hizo Paulina el 25/09/2026 sobre cómo llevar
 **Nota (07-08/10/2026):** el plan gratuito de Supabase pausa proyectos inactivos por ~7 días. Si el link vuelve a dar "no encontramos este negocio" y no hay nada en el código que lo explique, lo primero a revisar es si el proyecto de Supabase está pausado (entrar a supabase.com → el proyecto → botón "Restore"/"Resume").
 
 **Lo técnico, en orden:**
-1. **Deploy real.** Hecho — repo de GitHub (`Paulinagarciavazquez/plataforma-turnos`) conectado a Vercel, deploy automático en cada `git push origin main`. **Ojo (11/10/2026):** en Vercel hay dos proyectos con nombre parecido. El real es **`plataforma-turnos-9bcp`** (el de la demo y el que recibe cada deploy): ahí van las variables de entorno (`CRON_SECRET`, `EMAIL_REMITENTE`, etc.) y los dominios. El proyecto `plataforma-turnos` (link `plataforma-turnos-virid.vercel.app`) es un duplicado vacío que da 404 — se puede borrar cuando se confirme que todo anda en 9bcp.
+1. **Deploy real.** Hecho — repo de GitHub (`Paulinagarciavazquez/plataforma-turnos`) conectado a Vercel, deploy automático en cada `git push origin main`. **Ojo (11/10/2026):** en Vercel hay dos proyectos con nombre parecido. El real es **`plataforma-turnos-9bcp`** (el de la demo y el que recibe cada deploy): ahí van las variables de entorno (`CRON_SECRET`, `EMAIL_REMITENTE`, etc.) y los dominios. El proyecto duplicado `plataforma-turnos` (link `plataforma-turnos-virid.vercel.app`, vacío y fallando en cada deploy) se borró el 12/10/2026.
 2. **Dominio.** Resuelto con el subdominio gratuito `plataforma-turnos-9bcp.vercel.app` — ya desbloqueó la vuelta automática de Mercado Pago (ver punto 5). Falta todavía verificar un dominio en Resend (punto 7). Un dominio propio con nombre de marca queda como mejora futura, no urgente.
 3. **Variables de entorno en Vercel**: cargadas las 4 (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`).
 4. **`npm install` limpio antes de desplegar.** Hecho — `package-lock.json` regenerado limpio antes del primer deploy.
@@ -88,7 +88,7 @@ Se revisó la landing de Agenda Estudio contra el código real de la plataforma.
 
 ### B. Infraestructura (cuentas y servicios)
 1. **Dominio de la plataforma: `agenda-estudio.com.ar` — funcionando (11/10/2026).** Delegado a Vercel (`ns1.vercel-dns.com` / `ns2.vercel-dns.com`), todos los registros (incluidos los de Resend) se manejan desde Vercel. La landing (proyecto Vercel `agenda-estudio`, se publica con `npx vercel --prod` desde `C:\Users\pauli\agenda-estudio`) vive en la raíz; la demo en `demo.agenda-estudio.com.ar` (proyecto `plataforma-turnos-9bcp` + `negocios.dominio`), y los 3 botones "Probar la demo" de la landing ya apuntan ahí. Los mails salen desde `turnos@agenda-estudio.com.ar`.
-2. **Dominio verificado en Resend — hecho (11/10/2026)**, con "Auto configure" (Resend cargó solo los registros DKIM/SPF/MX en Vercel), región São Paulo. Variable `EMAIL_REMITENTE = turnos@agenda-estudio.com.ar` cargada en el proyecto 9bcp. Pendiente: confirmar con una reserva que el comprobante le llega a una dirección que no sea la de Paulina.
+2. **Dominio verificado en Resend — hecho (11/10/2026)**, con "Auto configure" (Resend cargó solo los registros DKIM/SPF/MX en Vercel), región São Paulo. Variable `EMAIL_REMITENTE = turnos@agenda-estudio.com.ar` cargada en el proyecto 9bcp. **Probado (12/10/2026): el comprobante le llega a una dirección que no es la de Paulina.**
 3. **Vercel Pro** (≈ USD 20/mes) en cuanto se cobre el primer mes: el plan gratis no permite uso comercial. Necesario también para que el cron del recordatorio corra con más flexibilidad.
 4. **Supabase**: el plan gratis pausa el proyecto si pasa ~7 días sin uso y no tiene backups. Con un cliente real, una pausa = su web caída. Recomendado pasar a Pro (≈ USD 25/mes) al tener el primer cliente, o como mínimo hacer un backup manual periódico.
 5. Números: con un cliente, los costos fijos (~USD 45/mes + dominios) ya superan la mensualidad de $25.000. Se equilibra a partir de 2–3 clientes; el primer fee de alta ($120.000) cubre ese arranque.
@@ -124,3 +124,21 @@ Pasos, uno por vez con revisión de Paulina:
 6. Sumar el primer cliente real dando de alta un negocio NUEVO (nunca editando el piloto) siguiendo ese playbook.
 
 **Pendiente hoy (12/10/2026):** de la Parte 3, la prueba de mail a un tercero y lo administrativo (facturación, cobro de la mensualidad, pasar a planes pagos al cerrar el primer cliente); y los pasos 2 a 5 del rediseño del panel (Parte 4).
+
+## Parte 5 — Revisión de seguridad (12/10/2026)
+
+Revisión de caja blanca (todo el código) + pruebas de solo lectura contra producción como visitante anónimo, a pedido de Paulina. Sin pruebas de saturación.
+
+**Bien protegido:** datos de clientas (`reservas`) y tokens de Mercado Pago (`negocios_pagos`) no se pueden leer sin sesión; ninguna clave secreta aparece en el JS público; `.env.local` nunca se subió a GitHub; seña recalculada en el servidor; cron protegido; HTTPS + HSTS; mails escapan lo que escribe el cliente.
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| 1 | Registro de usuarios abierto en Supabase + política que dejaba a cualquier usuario crearse un negocio | Registro cerrado por Paulina en Supabase (Authentication). Política `negocios_insert_propio` borrada (migración de seguridad, parte A) |
+| 2 | Verificación de pagos: sin `external_reference` no se controlaba; un mismo pago podía confirmar varias reservas; una reserva cancelada se podía "revivir" | Arreglado en `confirmarPagoDeReserva` + índice único `reservas_pago_unico` |
+| 3 | Email de la dueña legible por cualquiera en `negocios` | Movido a `negocios_pagos.email_notificaciones` (privada); `sumarEmailDelNegocio` lo suma a la reserva para los mails. Parte B de la migración borra la columna vieja |
+| 4 | Reservas falsas sin límite (bloquear agenda 30 min, spam, agotar cupo de Resend) | Pendiente: límite por persona + captcha invisible |
+| 5 | La vuelta de Mercado Pago usaba el `origin` que mandaba el navegador (posible redirección a un sitio falso) | Arreglado: `crear-preferencia` arma la URL con el dominio del pedido y el slug de la base |
+| 6 | Motivo de las ausencias público | Arreglado: permisos por columna para `anon` (solo id, negocio, profesional y fecha) |
+| 7 | Sin protección contra incrustar las páginas en otro sitio | Arreglado: cabeceras en `next.config.mjs` (`X-Frame-Options: DENY`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`) |
+
+Pendiente también: términos y condiciones / política de privacidad (Ley 25.326, Defensa del Consumidor) en la web de reservas y cláusulas de responsabilidad en el contrato.

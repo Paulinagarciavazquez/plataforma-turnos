@@ -331,8 +331,6 @@ export default function ReservaNegocio({ params }) {
         body: JSON.stringify({
           negocioId: datosNegocio.id,
           reservaId,
-          slug,
-          origin: window.location.origin,
         }),
       });
 
@@ -439,8 +437,6 @@ export default function ReservaNegocio({ params }) {
         body: JSON.stringify({
           negocioId: reservaConfirmada.negocioId,
           reservaId: reservaConfirmada.reservaId,
-          slug,
-          origin: window.location.origin,
         }),
       });
 

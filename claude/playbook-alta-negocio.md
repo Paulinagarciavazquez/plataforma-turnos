@@ -4,10 +4,22 @@
 
 Cada negocio real nuevo es siempre una fila nueva en la tabla `negocios` de Supabase — nunca se edita ni se "convierte" el piloto (`unas-test`, mostrado como "by olivia"). El piloto queda permanente con `modo_demo = true`, como vidriera de portfolio; cada cliente nace con su propio `slug`, `modo_demo = false` (su valor por defecto) y sus propias credenciales reales de Mercado Pago.
 
-**Oferta (actualizado 08/10/2026):** $120.000 pago único + $25.000/mes, diseño a medida siempre incluido, online en 14 días (ver la landing de Agenda Estudio y `camino-a-lanzamiento.md`). Antes de usar este playbook con el primer cliente, revisar la checklist de la Parte 3 de `camino-a-lanzamiento.md` — hay funciones que promete la landing y todavía no existen.
+**Oferta (actualizado 08/10/2026):** $120.000 pago único (50% al firmar, 50% al publicar) + $25.000/mes, diseño a medida siempre incluido, online en 14 días (ver la landing de Agenda Estudio y `camino-a-lanzamiento.md`). Desde el 12/10/2026 la plataforma ya hace todo lo que promete la landing (Parte 3 de `camino-a-lanzamiento.md`).
 
-## Paso 1 — Reunir información del cliente
-Antes de tocar nada, cobrar el pago de alta (o la parte acordada), firmar los términos simples y reunir del cliente:
+**Documentos:**
+- Términos del servicio (contrato): https://claude.ai/code/artifact/dcbf0f13-96a9-4060-9231-27ef8a2d1e58
+- Formulario de relevamiento (copiar uno por cliente): https://claude.ai/code/artifact/a6e81fa5-cbed-42c8-94f4-10c4a87ccd33
+- Guía de la suscripción mensual en Mercado Pago: https://claude.ai/code/artifact/4567dfd6-9a56-4ddf-80f7-1628fbba44ce
+
+## Paso 0 — Una sola vez, antes del primer cliente
+1. **Facturación:** estar inscripta en el monotributo (ARCA) con una actividad que cubra este servicio y una categoría que alcance; confirmarlo con un contador. Cada cobro lleva su factura C (ARCA → Comprobantes en línea).
+2. **Plan de suscripción en Mercado Pago:** crear el plan "Agenda Estudio · Mantenimiento mensual" de $25.000 siguiendo la guía de arriba. Es el mismo link para todos los clientes.
+3. **Planes pagos, al cobrar el primer pago:** Vercel → Settings → Billing → Upgrade a Pro (≈ USD 20/mes; el plan gratis no permite uso comercial) y Supabase → Billing → Pro (≈ USD 25/mes; el gratis pausa el proyecto si no hay actividad y no tiene backups). Se pagan con tarjeta en dólares: sumar los impuestos argentinos a pagos en el exterior.
+
+## Paso 1 — Firmar, cobrar el 50% y reunir información
+1. Completar y firmar los términos del servicio (con el CUIT de Paulina y los datos del cliente).
+2. Cobrar el primer 50% del alta ($60.000) con un link de pago de Mercado Pago (o transferencia) y hacer su factura C.
+3. Mandarle el formulario de relevamiento. Reunir del cliente:
 - Nombre del negocio y rubro (peluquería, uñas, estética, y a futuro odontología/kinesiología)
 - Sucursales, si tiene más de una
 - Servicios, con precio, duración y categoría de cada uno
@@ -26,7 +38,7 @@ Dar de alta:
 2. Usuario dueño en Supabase Auth, vinculado a esa fila como `owner_id`
 
 ## Paso 3 — Cargar servicios, profesionales y horarios
-El cliente (o Paulina por él, al principio) carga desde `/admin`: servicios, profesionales y horarios de atención.
+El cliente (o Paulina por él, al principio) carga desde `/admin`: servicios y equipo ("Servicios y equipo"), sucursales, y en "Horarios y bloqueos" el horario de cada día, los feriados/cierres ya previstos y las vacaciones del equipo.
 
 ## Paso 4 — Conectar Mercado Pago
 1. El cliente pega su propio Access Token en `/admin/configuración`
@@ -52,16 +64,22 @@ Siempre incluido (decidido 08/10/2026): cada cliente tiene su propia piel diseñ
    Desde ese momento `src/proxy.js` muestra su página en la raíz del dominio (puede tardar hasta 5 minutos por la cache).
 
 ## Paso 7 — Configurar notificaciones
-Email del dueño cargado en el panel, para que le lleguen los avisos de turno nuevo (requiere el dominio de la plataforma verificado en Resend). Chequear que también salgan el comprobante y el recordatorio de 24 h al cliente. Sumar WhatsApp más adelante, cuando el volumen de un cliente lo pida.
+Email del dueño cargado en el panel, para que le lleguen los avisos de turno nuevo (requiere el dominio de la plataforma verificado en Resend). Chequear que también salgan el comprobante y el recordatorio del día anterior al cliente. Sumar WhatsApp más adelante, cuando el volumen de un cliente lo pida.
 
 ## Paso 8 — Probar el circuito completo
 Probar el circuito completo con ese negocio, ya en su dominio propio (reservar → pagar → confirmación → mail a la dueña → comprobante al cliente) antes de darlo por lanzado. Con credenciales reales, hacer una reserva con una seña chica de verdad y después cancelarla / devolverla desde Mercado Pago.
 
-## Paso 9 — Publicar y entregar
-1. Pasarle al cliente su link (`sudominio.com.ar`), su usuario del panel, y una explicación corta de cómo usar el panel (ver reservas, cancelar, bloquear horarios, cargar ausencias).
-2. Arrancar a cobrar la mensualidad.
+## Paso 9 — Publicar, cobrar y entregar
+1. Pasarle al cliente su link (`sudominio.com.ar`), su usuario del panel, y una explicación corta de cómo usar el panel: Agenda (ver turnos, cancelar, bloquear tocando un horario libre), Señas, y Horarios y bloqueos.
+2. Cobrar el segundo 50% del alta ($60.000) y hacer su factura C.
+3. Mandarle el link de la suscripción mensual de Mercado Pago (mensaje modelo en la guía). Si prefiere transferencia, paga del 1 al 10 de cada mes.
 
 No hace falta ningún deploy nuevo para los datos — el negocio vive en la misma plataforma, junto al piloto (que sigue intacto en su propio slug). Solo hay deploy si se sumó una piel a medida nueva (Paso 5).
+
+## Mes a mes, con cada cliente
+1. Después del día 5, revisar en Mercado Pago → Planes de suscripción que se hayan cobrado todas las mensualidades.
+2. Hacer la factura C de cada cobro.
+3. Si un cobro falló, escribirle al cliente. Según los términos: a los 15 días del aviso impago la web se puede pausar; a los 60 días se da de baja.
 
 ## Cosas a tener en el radar
 

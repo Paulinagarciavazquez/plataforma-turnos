@@ -12,9 +12,14 @@ import { calcularMontoSena, venceElPago } from "@/lib/reservas";
 // ve, solo recibe de vuelta la URL de checkout.
 export async function POST(request) {
   try {
-    const { negocioId, reservaId, slug, origin } = await request.json();
+    const { negocioId, reservaId } = await request.json();
+    // La vuelta de Mercado Pago va al mismo sitio desde el que se reservó (el
+    // dominio lo decide Vercel, no el navegador) y con el slug guardado en la
+    // base: así nadie puede armar un link de pago que, al terminar, mande a
+    // la clienta a otra página.
+    const origin = new URL(request.url).origin;
 
-    if (!negocioId || !reservaId || !slug || !origin) {
+    if (!negocioId || !reservaId) {
       return NextResponse.json({ error: "Faltan datos para iniciar el pago." }, { status: 400 });
     }
 
@@ -25,7 +30,7 @@ export async function POST(request) {
     const { data: reserva, error: errorReserva } = await supabaseAdmin
       .from("reservas")
       .select(
-        "id, negocio_id, estado, monto_sena, creado_en, bloqueo_manual, servicios(nombre, precio), negocios(tipo_sena, porcentaje_o_monto_sena)"
+        "id, negocio_id, estado, monto_sena, creado_en, bloqueo_manual, servicios(nombre, precio), negocios(slug, tipo_sena, porcentaje_o_monto_sena)"
       )
       .eq("id", reservaId)
       .maybeSingle();
@@ -97,9 +102,9 @@ export async function POST(request) {
         ],
         external_reference: reservaId,
         back_urls: {
-          success: `${origin}/${slug}?pago=exito&reserva=${reservaId}`,
-          failure: `${origin}/${slug}?pago=fallo&reserva=${reservaId}`,
-          pending: `${origin}/${slug}?pago=pendiente&reserva=${reservaId}`,
+          success: `${origin}/${reserva.negocios.slug}?pago=exito&reserva=${reservaId}`,
+          failure: `${origin}/${reserva.negocios.slug}?pago=fallo&reserva=${reservaId}`,
+          pending: `${origin}/${reserva.negocios.slug}?pago=pendiente&reserva=${reservaId}`,
         },
         // Sin esto, Mercado Pago no redirige solo de vuelta al sitio: deja
         // a la clienta en su propia pantalla con un botón "Volver al sitio"

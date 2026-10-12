@@ -17,7 +17,22 @@ const REMITENTE = process.env.EMAIL_REMITENTE || "onboarding@resend.dev";
 // recordatorio al cliente) sobre una reserva. Lo usa también la tarea
 // diaria de recordatorios (api/cron/recordatorios).
 export const CAMPOS_RESERVA =
-  "id, negocio_id, fecha, hora, duracion_minutos, monto_sena, estado, nombre_cliente, telefono_cliente, email_cliente, servicios(nombre, precio), sucursales(nombre, direccion), profesionales(nombre), negocios(nombre, slug, email_notificaciones, color_primario, modo_demo)";
+  "id, negocio_id, fecha, hora, duracion_minutos, monto_sena, estado, nombre_cliente, telefono_cliente, email_cliente, servicios(nombre, precio), sucursales(nombre, direccion), profesionales(nombre), negocios(nombre, slug, color_primario, modo_demo)";
+
+// El email de avisos de la dueña vive en "negocios_pagos" (tabla privada,
+// sin lectura pública), no en "negocios" (que cualquiera puede leer). Esta
+// función lo suma a la reserva (en reserva.negocios.email_notificaciones)
+// para que los mails lo encuentren donde siempre.
+export async function sumarEmailDelNegocio(reserva) {
+  if (!reserva?.negocios) return reserva;
+  const { data } = await supabaseAdmin
+    .from("negocios_pagos")
+    .select("email_notificaciones")
+    .eq("negocio_id", reserva.negocio_id)
+    .maybeSingle();
+  reserva.negocios.email_notificaciones = data?.email_notificaciones || null;
+  return reserva;
+}
 
 // Le avisa por email a la dueña del negocio que se confirmó (y pagó) un
 // turno nuevo. Nunca rompe la confirmación del pago si falla: es un aviso,
@@ -80,6 +95,7 @@ export async function mandarMailCliente(reserva, tipo) {
 
 // Los dos mails que salen cuando un turno queda confirmado, en paralelo.
 async function mandarMailsDeTurnoConfirmado(reserva) {
+  await sumarEmailDelNegocio(reserva);
   await Promise.all([avisarNuevoTurno(reserva), mandarMailCliente(reserva, "comprobante")]);
 }
 
@@ -151,15 +167,42 @@ export async function confirmarPagoDeReserva({ reservaId, paymentId }) {
     };
   }
 
+  // Una reserva cancelada (por la dueña) no se puede "revivir" con un pago.
+  if (reserva.estado !== "pendiente_pago") {
+    return {
+      status: 200,
+      body: { ...resumenBase, estadoPago: "error", error: "Esta reserva ya no está esperando un pago. Contactanos." },
+    };
+  }
+
   const client = new MercadoPagoConfig({ accessToken: pago.mercadopago_access_token });
   const pagoMp = await new Payment(client).get({ id: paymentId });
 
-  // Chequeo de seguridad: el pago que estamos mirando tiene que corresponder
-  // a esta reserva (lo guardamos como external_reference al crear la preferencia).
-  if (pagoMp.external_reference && pagoMp.external_reference !== reservaId) {
+  // Chequeos de seguridad:
+  // 1. El pago tiene que ser de ESTA reserva: al crear la preferencia lo
+  //    guardamos como external_reference. Un pago sin esa referencia (por
+  //    ejemplo, otro cobro cualquiera de la cuenta del negocio) no sirve.
+  if (pagoMp.external_reference !== reservaId) {
+    console.error("Pago que no corresponde a la reserva:", { reservaId, paymentId, ref: pagoMp.external_reference });
     return {
       status: 200,
       body: { ...resumenBase, estadoPago: "error", error: "El pago no corresponde a esta reserva." },
+    };
+  }
+
+  // 2. Un mismo pago no puede confirmar dos reservas distintas.
+  const { data: otraReserva } = await supabaseAdmin
+    .from("reservas")
+    .select("id")
+    .eq("id_pago_mercadopago", String(paymentId))
+    .neq("id", reservaId)
+    .limit(1)
+    .maybeSingle();
+  if (otraReserva) {
+    console.error("Pago ya usado en otra reserva:", { reservaId, paymentId, otra: otraReserva.id });
+    return {
+      status: 200,
+      body: { ...resumenBase, estadoPago: "error", error: "Ese pago ya se usó para otra reserva." },
     };
   }
 

@@ -26,9 +26,9 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     negocio.color_secundario || COLOR_POR_DEFECTO_SECUNDARIO
   );
   const [logoUrl, setLogoUrl] = useState(negocio.logo_url || "");
-  const [emailNotificaciones, setEmailNotificaciones] = useState(
-    negocio.email_notificaciones || ""
-  );
+  // Vive en "negocios_pagos" (privada), no en "negocios" (pública): se
+  // carga junto con los datos de Mercado Pago, más abajo.
+  const [emailNotificaciones, setEmailNotificaciones] = useState("");
 
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null); // { tipo: "exito" | "error", texto }
@@ -61,10 +61,11 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
       setCargandoPago(true);
       const { data } = await supabase
         .from("negocios_pagos")
-        .select("mercadopago_access_token, mercadopago_webhook_secret")
+        .select("mercadopago_access_token, mercadopago_webhook_secret, email_notificaciones")
         .eq("negocio_id", negocio.id)
         .maybeSingle();
 
+      setEmailNotificaciones(data?.email_notificaciones || "");
       setTienePagoConfigurado(Boolean(data?.mercadopago_access_token));
       setTieneWebhookConfigurado(Boolean(data?.mercadopago_webhook_secret));
       setCargandoPago(false);
@@ -90,13 +91,21 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
       color_primario: colorPrimario,
       color_secundario: colorSecundario,
       logo_url: logoUrl.trim() || null,
-      email_notificaciones: emailNotificaciones.trim() || null,
     };
 
-    const { error } = await supabase
-      .from("negocios")
-      .update(cambios)
-      .eq("id", negocio.id);
+    const [{ error: errorNegocio }, { error: errorEmail }] = await Promise.all([
+      supabase.from("negocios").update(cambios).eq("id", negocio.id),
+      // Solo actualiza el email: si la fila ya existe, el token de Mercado
+      // Pago y la clave del webhook quedan como estaban.
+      supabase
+        .from("negocios_pagos")
+        .upsert(
+          { negocio_id: negocio.id, email_notificaciones: emailNotificaciones.trim() || null },
+          { onConflict: "negocio_id" }
+        ),
+    ]);
+    const error = errorNegocio || errorEmail;
+    if (error) console.error("Error guardando configuración:", error);
 
     setGuardando(false);
 

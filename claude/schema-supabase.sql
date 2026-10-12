@@ -544,3 +544,36 @@ create policy "cierres_admin_propio"
       where n.id = cierres_negocio.negocio_id and n.owner_id = auth.uid()
     )
   );
+
+-- ============================================================
+-- MIGRACIÓN: arreglos de seguridad (12/10/2026)
+-- ============================================================
+-- Revisión de seguridad (ver Parte 5 de camino-a-lanzamiento.md).
+-- Además, en Supabase → Authentication se desactivó "Allow new users to
+-- sign up": los usuarios de cada negocio los crea Paulina a mano.
+--
+-- PARTE A (correr ANTES de subir el código):
+
+-- 1) Solo Paulina da de alta negocios (desde el SQL Editor, que no pasa por
+--    RLS). Antes, cualquier usuario logueado podía crearse un negocio propio.
+drop policy if exists "negocios_insert_propio" on public.negocios;
+
+-- 2) El email de avisos de la dueña pasa a la tabla privada negocios_pagos
+--    (en "negocios" lo podía leer cualquiera).
+alter table public.negocios_pagos add column if not exists email_notificaciones text;
+insert into public.negocios_pagos (negocio_id, email_notificaciones)
+select id, email_notificaciones from public.negocios
+on conflict (negocio_id) do update set email_notificaciones = excluded.email_notificaciones;
+
+-- 3) Un mismo pago de Mercado Pago no puede quedar en dos reservas.
+create unique index if not exists reservas_pago_unico
+  on public.reservas (id_pago_mercadopago)
+  where id_pago_mercadopago is not null and id_pago_mercadopago <> 'demo';
+
+-- 4) El motivo de las ausencias deja de ser público (el flujo de reserva
+--    solo necesita la fecha).
+revoke select on public.ausencias_profesionales from anon;
+grant select (id, negocio_id, profesional_id, fecha) on public.ausencias_profesionales to anon;
+
+-- PARTE B (correr DESPUÉS de que el código nuevo esté publicado):
+alter table public.negocios drop column if exists email_notificaciones;

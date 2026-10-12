@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { CAMPOS_RESERVA, mandarMailCliente } from "@/lib/confirmarPago";
+import { CAMPOS_RESERVA, mandarMailCliente, sumarEmailDelNegocio } from "@/lib/confirmarPago";
 
 // Tarea diaria (la dispara Vercel Cron, ver vercel.json): le manda a cada
 // cliente con turno confirmado para MAÑANA un mail de recordatorio, con el
@@ -61,6 +61,7 @@ export async function GET(request) {
 
     if (!marcada?.length) continue;
 
+    await sumarEmailDelNegocio(reserva);
     const ok = await mandarMailCliente(reserva, "recordatorio");
     if (ok) {
       enviados++;
