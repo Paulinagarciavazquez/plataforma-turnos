@@ -1,8 +1,8 @@
 "use client";
 
 import AdminShell from "./AdminShell";
-import ListaReservas from "./ListaReservas";
+import Agenda from "./Agenda";
 
-export default function PaginaAdminReservas() {
-  return <AdminShell>{(negocio) => <ListaReservas negocio={negocio} />}</AdminShell>;
+export default function PaginaAdminAgenda() {
+  return <AdminShell sinTarjeta>{(negocio) => <Agenda negocio={negocio} />}</AdminShell>;
 }

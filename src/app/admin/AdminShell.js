@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useNegocioAutenticado } from "../../lib/useNegocioAutenticado";
+import { colorDeMarca, fuenteDeMarca } from "../../lib/marcaNegocio";
 
 // Secciones del panel, en el orden en que aparecen en el menú.
 const SECCIONES = [
@@ -15,20 +16,6 @@ const SECCIONES = [
   { href: "/admin/sucursales", label: "Sucursales" },
   { href: "/admin/configuracion", label: "Configuración" },
 ];
-
-// Diseño base común para todos los negocios + su marca: nombre, logo y
-// color principal salen de la fila del negocio. La tipografía del nombre
-// es Instrument Serif por defecto; un negocio con diseño a medida puede
-// tener la suya (mismo patrón por slug que las pieles del flujo de reserva).
-const FUENTE_MARCA = {
-  "unas-test": "var(--font-marca-italiana)",
-};
-
-const COLOR_POR_DEFECTO = "#1E1B1A";
-
-function colorDeMarca(negocio) {
-  return /^#[0-9a-fA-F]{6}$/.test(negocio?.color_primario || "") ? negocio.color_primario : COLOR_POR_DEFECTO;
-}
 
 function iniciales(nombre) {
   return (nombre || "?")
@@ -57,7 +44,7 @@ function Marca({ negocio }) {
         <div
           aria-hidden="true"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-white"
-          style={{ backgroundColor: color, fontFamily: FUENTE_MARCA[negocio.slug] || "var(--font-titulo)" }}
+          style={{ backgroundColor: color, fontFamily: fuenteDeMarca(negocio) }}
         >
           {iniciales(negocio.nombre)}
         </div>
@@ -65,7 +52,7 @@ function Marca({ negocio }) {
       <div className="min-w-0">
         <div
           className="truncate text-2xl leading-none text-[#1E1B1A]"
-          style={{ fontFamily: FUENTE_MARCA[negocio.slug] || "var(--font-titulo)" }}
+          style={{ fontFamily: fuenteDeMarca(negocio) }}
         >
           {negocio.nombre}
         </div>
