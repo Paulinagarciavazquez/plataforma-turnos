@@ -10,7 +10,6 @@ import {
   fechaCerrada,
 } from "../../lib/horarios";
 import { formatearFechaCorta } from "../../lib/formatearFecha";
-import { calcularMontoSena } from "../../lib/reservas";
 import SkinPilotoByOlivia from "./SkinPilotoByOlivia";
 
 export default function ReservaNegocio({ params }) {
@@ -258,34 +257,36 @@ export default function ReservaNegocio({ params }) {
     setEnviandoReserva(true);
     setErrorReserva(null);
 
-    const montoSena = calcularMontoSena(datosNegocio, elecciones.servicio);
-
-    // Generamos el id acá mismo (en vez de dejar que lo genere Supabase) para
-    // poder usarlo enseguida al crear el pago, sin tener que releer la fila:
-    // como el visitante que reserva es anónimo, la política de RLS de SELECT
-    // en "reservas" (que solo deja ver al dueño del negocio) bloquearía el
-    // RETURNING de un .select() después del insert.
-    const reservaId = crypto.randomUUID();
-
-    const { error } = await supabase.from("reservas").insert({
-      id: reservaId,
-      negocio_id: datosNegocio.id,
-      sucursal_id: elecciones.sucursal?.id || null,
-      servicio_id: elecciones.servicio.id,
-      profesional_id: elecciones.profesional?.id || null,
-      nombre_cliente: nombre,
-      telefono_cliente: telefono,
-      email_cliente: email || null,
-      fecha: elecciones.fecha,
-      hora: elecciones.hora,
-      duracion_minutos: elecciones.servicio.duracion_minutos,
-      estado: "pendiente_pago",
-      monto_sena: montoSena,
-    });
-
-    if (error) {
+    // La reserva la crea el servidor (api/reservar), que vuelve a controlar
+    // que el horario siga libre y que los datos tengan sentido, y limita
+    // cuántas reservas puede hacer cada visitante.
+    let reservaId;
+    try {
+      const respuestaReserva = await fetch("/api/reservar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          negocioId: datosNegocio.id,
+          sucursalId: elecciones.sucursal?.id || null,
+          servicioId: elecciones.servicio.id,
+          profesionalId: elecciones.profesional?.id || null,
+          fecha: elecciones.fecha,
+          hora: elecciones.hora,
+          nombre,
+          telefono,
+          email,
+        }),
+      });
+      const datosReserva = await respuestaReserva.json();
+      if (!respuestaReserva.ok) {
+        setEnviandoReserva(false);
+        setErrorReserva(datosReserva.error || "No pudimos guardar tu reserva. Probá de nuevo en unos segundos.");
+        return;
+      }
+      reservaId = datosReserva.reservaId;
+    } catch (errorGuardar) {
       setEnviandoReserva(false);
-      console.error("Error guardando la reserva:", error);
+      console.error("Error guardando la reserva:", errorGuardar);
       setErrorReserva("No pudimos guardar tu reserva. Probá de nuevo en unos segundos.");
       return;
     }

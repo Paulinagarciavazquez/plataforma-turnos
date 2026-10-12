@@ -577,3 +577,29 @@ grant select (id, negocio_id, profesional_id, fecha) on public.ausencias_profesi
 
 -- PARTE B (correr DESPUÉS de que el código nuevo esté publicado):
 alter table public.negocios drop column if exists email_notificaciones;
+
+-- ============================================================
+-- MIGRACIÓN: reservas creadas por el servidor + límite por visitante
+-- (12/10/2026, revisión de seguridad punto 4)
+-- ============================================================
+-- Las reservas de clientes ya no se crean desde el navegador sino desde
+-- src/app/api/reservar/route.js (con la Service Role Key), que controla
+-- horario, disponibilidad y un límite de reservas por visitante.
+--
+-- PARTE A (ANTES de subir el código): código anónimo del visitante (hash de
+-- su IP; la IP no se guarda) para poder limitar cuántas reservas hace.
+alter table public.reservas add column if not exists origen text;
+create index if not exists idx_reservas_origen on public.reservas(origen, creado_en);
+
+-- PARTE B (DESPUÉS de publicar el código): nadie puede crear reservas
+-- directo desde afuera; solo la dueña sus bloqueos manuales desde el panel.
+drop policy if exists "reservas_insert_publico" on public.reservas;
+drop policy if exists "reservas_insert_duenio" on public.reservas;
+create policy "reservas_insert_duenio"
+  on public.reservas for insert
+  with check (
+    exists (
+      select 1 from public.negocios n
+      where n.id = reservas.negocio_id and n.owner_id = auth.uid()
+    )
+  );
