@@ -1,12 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import AdminShell from "../AdminShell";
-import GestionAusencias from "./GestionAusencias";
-
+// Las ausencias ahora viven en "Horarios y bloqueos". Esta ruta queda solo
+// para que un link viejo no dé error.
 export default function PaginaAdminAusencias() {
-  return (
-    <AdminShell>
-      {(negocio) => <GestionAusencias negocio={negocio} />}
-    </AdminShell>
-  );
+  redirect("/admin/horarios");
 }

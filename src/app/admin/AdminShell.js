@@ -6,32 +6,76 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useNegocioAutenticado } from "../../lib/useNegocioAutenticado";
 
-// Secciones del panel, en el orden en que aparecen en la navegación.
+// Secciones del panel, en el orden en que aparecen en el menú.
 const SECCIONES = [
-  { href: "/admin", label: "Reservas" },
-  { href: "/admin/servicios", label: "Servicios y profesionales" },
+  { href: "/admin", label: "Agenda" },
+  { href: "/admin/senas", label: "Señas" },
+  { href: "/admin/horarios", label: "Horarios y bloqueos" },
+  { href: "/admin/servicios", label: "Servicios y equipo" },
   { href: "/admin/sucursales", label: "Sucursales" },
-  { href: "/admin/ausencias", label: "Ausencias" },
   { href: "/admin/configuracion", label: "Configuración" },
 ];
 
-// Layout compartido por todas las pantallas del panel: pantalla de login si
-// no hay sesión, encabezado + navegación + estado de carga/error del
-// negocio, y el contenido propio de cada pantalla (vía render prop, recibe
-// el negocio ya cargado) una vez que todo está listo.
-export default function AdminShell({ children }) {
-  const {
-    cargandoSesion,
-    sesion,
-    negocio,
-    setNegocio,
-    cargandoNegocio,
-    errorNegocio,
-    cerrarSesion,
-  } = useNegocioAutenticado();
+// Diseño base común para todos los negocios + su marca: nombre, logo y
+// color principal salen de la fila del negocio. La tipografía del nombre
+// es Instrument Serif por defecto; un negocio con diseño a medida puede
+// tener la suya (mismo patrón por slug que las pieles del flujo de reserva).
+const FUENTE_MARCA = {
+  "unas-test": "var(--font-marca-italiana)",
+};
 
-  const pathname = usePathname();
+const COLOR_POR_DEFECTO = "#1E1B1A";
 
+function colorDeMarca(negocio) {
+  return /^#[0-9a-fA-F]{6}$/.test(negocio?.color_primario || "") ? negocio.color_primario : COLOR_POR_DEFECTO;
+}
+
+function iniciales(nombre) {
+  return (nombre || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((palabra) => palabra[0])
+    .join("")
+    .toLowerCase();
+}
+
+// Link a la web de reservas del negocio: su dominio propio si tiene uno,
+// si no la ruta /slug de la plataforma.
+function urlWebDeReservas(negocio) {
+  return negocio.dominio ? `https://${negocio.dominio}` : `/${negocio.slug}`;
+}
+
+function Marca({ negocio }) {
+  const color = colorDeMarca(negocio);
+  return (
+    <div className="flex items-center gap-3">
+      {negocio.logo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={negocio.logo_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" />
+      ) : (
+        <div
+          aria-hidden="true"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg text-white"
+          style={{ backgroundColor: color, fontFamily: FUENTE_MARCA[negocio.slug] || "var(--font-titulo)" }}
+        >
+          {iniciales(negocio.nombre)}
+        </div>
+      )}
+      <div className="min-w-0">
+        <div
+          className="truncate text-2xl leading-none text-[#1E1B1A]"
+          style={{ fontFamily: FUENTE_MARCA[negocio.slug] || "var(--font-titulo)" }}
+        >
+          {negocio.nombre}
+        </div>
+        <div className="mt-1 text-xs text-[#6B6461]">Panel del negocio</div>
+      </div>
+    </div>
+  );
+}
+
+function PantallaLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorLogin, setErrorLogin] = useState(null);
@@ -51,94 +95,158 @@ export default function AdminShell({ children }) {
     }
   };
 
+  return (
+    <main
+      className="flex min-h-screen flex-col items-center justify-center gap-8 bg-[#F6F4F1] px-4 text-[#1E1B1A]"
+      style={{ fontFamily: "var(--font-panel)" }}
+    >
+      <div className="text-center">
+        <h1 className="text-5xl" style={{ fontFamily: "var(--font-titulo)" }}>
+          Tu panel
+        </h1>
+        <p className="mt-2 text-[#6B6461]">Entrá para ver tu agenda.</p>
+      </div>
+      <form
+        onSubmit={manejarLogin}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-[#ECE6E0] bg-white p-6"
+      >
+        <label className="flex flex-col gap-1.5 text-sm text-[#5B5451]">
+          Email
+          <input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="min-h-11 rounded-xl border border-[#DCD5CE] px-3 text-base text-[#1E1B1A] focus:border-[#1E1B1A] focus:outline-none"
+            required
+          />
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm text-[#5B5451]">
+          Contraseña
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="min-h-11 rounded-xl border border-[#DCD5CE] px-3 text-base text-[#1E1B1A] focus:border-[#1E1B1A] focus:outline-none"
+            required
+          />
+        </label>
+        {errorLogin && <p className="text-sm text-red-700">{errorLogin}</p>}
+        <button
+          type="submit"
+          disabled={enviandoLogin}
+          className="min-h-11 rounded-full bg-[#1E1B1A] px-6 font-semibold text-white transition hover:bg-black disabled:opacity-60"
+        >
+          {enviandoLogin ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
+      <p className="text-xs text-[#6B6461]">
+        Agenda <span style={{ fontFamily: "var(--font-titulo)" }} className="text-sm italic">estudio</span>
+      </p>
+    </main>
+  );
+}
+
+// Layout compartido por todas las pantallas del panel: pantalla de login si
+// no hay sesión, menú lateral con la marca del negocio (arriba, desplegable,
+// en el celular), título de la sección, y el contenido propio de cada
+// pantalla (vía render prop, recibe el negocio ya cargado).
+//
+// sinTarjeta: la pantalla arma su propio fondo/tarjetas (ej. la Agenda); si
+// no, el contenido va dentro de una tarjeta blanca.
+export default function AdminShell({ children, sinTarjeta = false }) {
+  const { cargandoSesion, sesion, negocio, setNegocio, cargandoNegocio, errorNegocio, cerrarSesion } =
+    useNegocioAutenticado();
+
+  const pathname = usePathname();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
   if (cargandoSesion) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F6F4FC]">
-        <p className="text-gray-500">Cargando...</p>
+      <main className="flex min-h-screen items-center justify-center bg-[#F6F4F1]" style={{ fontFamily: "var(--font-panel)" }}>
+        <p className="text-[#6B6461]">Cargando...</p>
       </main>
     );
   }
 
   if (!sesion) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-6 bg-[#F6F4FC] px-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Panel del negocio</h1>
-        <form
-          onSubmit={manejarLogin}
-          className="flex w-full max-w-sm flex-col gap-3 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm shadow-violet-100/40"
-        >
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-violet-200 bg-white px-4 py-3 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-xl border border-violet-200 bg-white px-4 py-3 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 transition"
-            required
-          />
-          {errorLogin && <p className="text-sm text-red-600">{errorLogin}</p>}
-          <button
-            type="submit"
-            disabled={enviandoLogin}
-            className="rounded-full bg-violet-600 px-8 py-3 text-white font-medium shadow-sm hover:bg-violet-700 transition disabled:opacity-60"
-          >
-            {enviandoLogin ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
-      </main>
-    );
+    return <PantallaLogin />;
   }
 
+  const seccionActual = SECCIONES.find((seccion) => seccion.href === pathname);
+
   return (
-    <main className="min-h-screen bg-[#F6F4FC] px-6 py-10">
-      <div className="mx-auto flex max-w-2xl flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">
-            {negocio ? negocio.nombre : "Panel del negocio"}
-          </h1>
+    <div
+      className="flex min-h-screen flex-col bg-[#F6F4F1] text-[#1E1B1A] md:flex-row"
+      style={{ fontFamily: "var(--font-panel)" }}
+    >
+      <aside className="border-b border-[#ECE6E0] bg-[#FBFAF8] md:sticky md:top-0 md:flex md:h-screen md:w-64 md:shrink-0 md:flex-col md:border-b-0 md:border-r">
+        <div className="flex items-center justify-between gap-3 px-4 py-4 md:px-5 md:py-7">
+          {negocio ? <Marca negocio={negocio} /> : <span className="text-[#6B6461]">Panel del negocio</span>}
           <button
-            onClick={cerrarSesion}
-            className="rounded-full border border-violet-200 px-4 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50 transition"
+            type="button"
+            onClick={() => setMenuAbierto((abierto) => !abierto)}
+            aria-expanded={menuAbierto}
+            aria-controls="menu-panel"
+            className="min-h-11 rounded-full border border-[#DCD5CE] bg-white px-4 text-sm md:hidden"
           >
-            Cerrar sesión
+            {menuAbierto ? "Cerrar" : "Menú"}
           </button>
         </div>
 
-        <nav className="flex flex-wrap gap-2">
-          {SECCIONES.map((seccion) => {
-            const activa = pathname === seccion.href;
-            return (
-              <Link
-                key={seccion.href}
-                href={seccion.href}
-                className={
-                  activa
-                    ? "rounded-full bg-violet-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm"
-                    : "rounded-full px-4 py-1.5 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-700 transition"
-                }
-              >
-                {seccion.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div id="menu-panel" className={`${menuAbierto ? "flex" : "hidden"} flex-1 flex-col gap-6 px-3 pb-5 md:flex md:px-4`}>
+          <nav aria-label="Secciones del panel" className="flex flex-col gap-1">
+            {SECCIONES.map((seccion) => {
+              const activa = pathname === seccion.href;
+              return (
+                <Link
+                  key={seccion.href}
+                  href={seccion.href}
+                  onClick={() => setMenuAbierto(false)}
+                  aria-current={activa ? "page" : undefined}
+                  className={`flex min-h-11 items-center rounded-xl px-3.5 text-[15px] transition ${
+                    activa ? "bg-[#1E1B1A] font-semibold text-white" : "text-[#4A4441] hover:bg-[#EFEBE6]"
+                  }`}
+                >
+                  {seccion.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        {cargandoNegocio && <p className="text-sm text-gray-500">Cargando tu negocio...</p>}
-        {errorNegocio && <p className="text-sm text-red-600">{errorNegocio}</p>}
-
-        {negocio && (
-          <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm shadow-violet-100/40">
-            {children(negocio, setNegocio)}
+          <div className="mt-auto flex flex-col items-start gap-2 px-3.5 text-sm">
+            {negocio && (
+              <a href={urlWebDeReservas(negocio)} target="_blank" rel="noopener" className="text-[#3B3532] underline-offset-4 hover:underline">
+                Ver mi web de reservas ↗
+              </a>
+            )}
+            <button type="button" onClick={cerrarSesion} className="min-h-8 text-[#6B6461] hover:text-[#1E1B1A]">
+              Cerrar sesión
+            </button>
           </div>
-        )}
-      </div>
-    </main>
+        </div>
+      </aside>
+
+      <main className="min-w-0 flex-1 px-4 py-7 md:px-10 md:py-9">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6">
+          {seccionActual && (
+            <h1 className="text-4xl leading-tight md:text-5xl" style={{ fontFamily: "var(--font-titulo)" }}>
+              {seccionActual.label}
+            </h1>
+          )}
+
+          {cargandoNegocio && <p className="text-sm text-[#6B6461]">Cargando tu negocio...</p>}
+          {errorNegocio && <p className="text-sm text-red-700">{errorNegocio}</p>}
+
+          {negocio &&
+            (sinTarjeta ? (
+              children(negocio, setNegocio)
+            ) : (
+              <div className="rounded-2xl border border-[#ECE6E0] bg-white p-5 md:p-6">{children(negocio, setNegocio)}</div>
+            ))}
+        </div>
+      </main>
+    </div>
   );
 }

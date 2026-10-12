@@ -102,6 +102,17 @@ Se revisó la landing de Agenda Estudio contra el código real de la plataforma.
 ### D. El día que llega el cliente
 Seguir `claude/playbook-alta-negocio.md`, que ya contempla dominio propio, diseño a medida y la prueba con un pago real.
 
+## Parte 4 — Rediseño del panel de administración (desde el 11/10/2026)
+
+El panel no coincidía con lo que muestra la landing (calendario semanal, resumen, menú lateral, bloquear feriados/vacaciones). Decisiones de Paulina: **diseño base común de Agenda Estudio + la marca de cada negocio** (nombre, logo, color principal; tipografía de marca opcional por slug), secciones **Agenda, Señas, Horarios y bloqueos** (+ Servicios y equipo, Sucursales, Configuración; "Clientes" quedó afuera), y **prototipo primero**. Prototipo aprobado en estructura: https://claude.ai/artifact/RFSgBnbdUooopipM5bdLDk
+
+Pasos, uno por vez con revisión de Paulina:
+1. **Estructura — hecho (12/10/2026):** `src/app/admin/AdminShell.js` con menú lateral (desplegable en el celular), marca del negocio, título por sección, link "Ver mi web de reservas", login nuevo; tipografías Schibsted Grotesk + Instrument Serif (+ Italiana para by olivia) en `src/app/admin/layout.js`. Rutas nuevas `/admin/senas` (por ahora un aviso) y `/admin/horarios` (por ahora las ausencias de siempre); `/admin/ausencias` redirige ahí. `AdminShell` acepta `sinTarjeta` para pantallas que arman sus propias tarjetas.
+2. **Agenda:** vistas Semana / Día (columnas por profesional) / Mes, resumen (turnos de la semana, señas cobradas, próximo turno), filtro por profesional, ficha del turno (WhatsApp, cancelar), bloquear tocando un horario libre.
+3. **Señas:** total cobrado por período y lista con estado de cada seña (pagada, esperando pago, sin pagar/liberada).
+4. **Horarios y bloqueos:** horario distinto por día, cierres para todo el local, vacaciones por rango de fechas — requiere cambios en la base.
+5. **Servicios, Sucursales y Configuración** al nuevo estilo (hoy siguen con el violeta viejo adentro de la tarjeta).
+
 ## Resumen del orden sugerido
 1. Deploy en Vercel + dominio simple — hecho.
 2. Diseño pulido llevado al código real del piloto + presentación — hecho, 100% listo para compartir como link.
@@ -110,4 +121,4 @@ Seguir `claude/playbook-alta-negocio.md`, que ya contempla dominio propio, dise�
 5. **Cerrar las brechas de la Parte 3** (mail al cliente, recordatorio 24 h, dominio por cliente, botón de calendario) + infraestructura + contrato.
 6. Sumar el primer cliente real dando de alta un negocio NUEVO (nunca editando el piloto) siguiendo ese playbook.
 
-**Pendiente hoy:** todo lo de la Parte 3.
+**Pendiente hoy (12/10/2026):** de la Parte 3, la prueba de mail a un tercero y lo administrativo (facturación, cobro de la mensualidad, pasar a planes pagos al cerrar el primer cliente); y los pasos 2 a 5 del rediseño del panel (Parte 4).
