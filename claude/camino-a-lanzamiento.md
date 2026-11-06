@@ -141,4 +141,17 @@ Revisión de caja blanca (todo el código) + pruebas de solo lectura contra prod
 | 6 | Motivo de las ausencias público | Arreglado: permisos por columna para `anon` (solo id, negocio, profesional y fecha) |
 | 7 | Sin protección contra incrustar las páginas en otro sitio | Arreglado: cabeceras en `next.config.mjs` (`X-Frame-Options: DENY`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`) |
 
-Pendiente también: términos y condiciones / política de privacidad (Ley 25.326, Defensa del Consumidor) en la web de reservas y cláusulas de responsabilidad en el contrato.
+Pendiente también: términos y condiciones / política de privacidad (Ley 25.326, Defensa del Consumidor) en la web de reservas, con casilla de aceptación (antes del primer cliente). Las cláusulas del contrato (límite de responsabilidad, indemnidad, datos personales responsable/encargada, ley aplicable y tribunales de Mendoza) se sumaron el 06/11/2026.
+
+## Parte 6 — Prueba de carga (06/11/2026)
+
+Simulación contra la base real de la demo (fechas lejanas que el flujo no ofrece; todo lo de prueba se borró al terminar), corriendo la plataforma en local.
+
+| Prueba | Antes | Después del arreglo |
+|---|---|---|
+| 12 personas reservando el mismo horario a la vez | ✘ 7 reservas guardadas para el mismo turno | ✔ 1 guardada, 11 ven "Ese horario se acaba de ocupar". Arreglo: función `crear_reserva_segura` en la base (candado por negocio + profesional + día, control y guardado en un solo paso), llamada por `api/reservar` |
+| Negocio con 1.500 turnos | ✘ La Agenda recibía 1.000 (límite de Supabase) y los más nuevos no aparecían | ✔ La Agenda pide solo el día / semana / mes que se mira (`rangoDe` en `Agenda.js`); "Próximo turno" es una consulta aparte. Mes cargado: 280 de 280 en ~0,1 s |
+| Señas de un mes con 600 turnos | ✔ 0,14 s | — |
+| Reservar con la base cargada | ✔ ~0,6 s por reserva | — |
+
+Límite a tener en cuenta con mucho movimiento: Resend gratis = 100 mails/día compartidos (3 mails por turno) → pasar a Resend Pro con el primer cliente con movimiento (sumado al Paso 0 del playbook). Pendiente menor: los bloqueos manuales del panel no pasan por `crear_reserva_segura` (choque posible solo si la dueña bloquea en el mismo segundo en que alguien reserva).

@@ -603,3 +603,67 @@ create policy "reservas_insert_duenio"
       where n.id = reservas.negocio_id and n.owner_id = auth.uid()
     )
   );
+
+-- ============================================================
+-- MIGRACIÓN: reservar sin turnos duplicados (06/11/2026)
+-- ============================================================
+-- La simulación de carga mostró que si muchas personas reservan el mismo
+-- horario al mismo tiempo, varias pasaban el control de "está libre" antes
+-- de que la primera se guardara (7 de 12 en la prueba). Esta función hace el
+-- control y el guardado en un solo paso, con un candado por negocio +
+-- profesional + día: los pedidos simultáneos se atienden de a uno.
+-- La llama solo el servidor (src/app/api/reservar/route.js).
+create or replace function public.crear_reserva_segura(
+  p_id uuid,
+  p_negocio_id uuid,
+  p_sucursal_id uuid,
+  p_servicio_id uuid,
+  p_profesional_id uuid,
+  p_nombre text,
+  p_telefono text,
+  p_email text,
+  p_fecha date,
+  p_hora time,
+  p_duracion integer,
+  p_monto_sena numeric,
+  p_origen text,
+  p_minutos_para_pagar integer
+) returns boolean
+language plpgsql
+as $$
+begin
+  perform pg_advisory_xact_lock(
+    hashtext(p_negocio_id::text || coalesce(p_profesional_id::text, '-') || p_fecha::text)
+  );
+
+  if exists (
+    select 1 from public.reservas r
+    where r.negocio_id = p_negocio_id
+      and r.fecha = p_fecha
+      and r.profesional_id is not distinct from p_profesional_id
+      and (
+        r.estado = 'confirmada'
+        or (r.estado = 'pendiente_pago' and r.creado_en > now() - make_interval(mins => p_minutos_para_pagar))
+      )
+      and p_hora < r.hora + make_interval(mins => r.duracion_minutos)
+      and r.hora < p_hora + make_interval(mins => p_duracion)
+  ) then
+    return false; -- el horario ya está ocupado
+  end if;
+
+  insert into public.reservas (
+    id, negocio_id, sucursal_id, servicio_id, profesional_id,
+    nombre_cliente, telefono_cliente, email_cliente,
+    fecha, hora, duracion_minutos, estado, monto_sena, origen
+  ) values (
+    p_id, p_negocio_id, p_sucursal_id, p_servicio_id, p_profesional_id,
+    p_nombre, p_telefono, p_email,
+    p_fecha, p_hora, p_duracion, 'pendiente_pago', p_monto_sena, p_origen
+  );
+  return true;
+end;
+$$;
+
+-- Solo el servidor (service_role) puede llamarla.
+revoke all on function public.crear_reserva_segura(uuid, uuid, uuid, uuid, uuid, text, text, text, date, time, integer, numeric, text, integer) from public, anon, authenticated;
+grant execute on function public.crear_reserva_segura(uuid, uuid, uuid, uuid, uuid, text, text, text, date, time, integer, numeric, text, integer) to service_role;

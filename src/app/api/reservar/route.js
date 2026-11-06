@@ -169,29 +169,35 @@ export async function POST(request) {
     if (choca) return error("Ese horario se acaba de ocupar. Elegí otro.", 409);
 
     // ---- Guardar ----
+    // El control de arriba frena la mayoría de los choques, pero si varias
+    // personas piden el mismo horario en el mismo instante pueden pasarlo
+    // todas a la vez. Por eso el guardado lo hace la función
+    // crear_reserva_segura de la base: vuelve a controlar y guarda en un solo
+    // paso, de a un pedido por vez (ver claude/schema-supabase.sql).
     const reservaId = crypto.randomUUID();
     const montoSena = calcularMontoSena(negocio, servicio);
-    const { error: errorInsert } = await supabaseAdmin.from("reservas").insert({
-      id: reservaId,
-      negocio_id: negocioId,
-      sucursal_id: sucursalId,
-      servicio_id: servicioId,
-      profesional_id: profesionalId,
-      nombre_cliente: nombre,
-      telefono_cliente: telefono,
-      email_cliente: email,
-      fecha,
-      hora,
-      duracion_minutos: duracion,
-      estado: "pendiente_pago",
-      monto_sena: montoSena,
-      origen,
+    const { data: guardada, error: errorInsert } = await supabaseAdmin.rpc("crear_reserva_segura", {
+      p_id: reservaId,
+      p_negocio_id: negocioId,
+      p_sucursal_id: sucursalId,
+      p_servicio_id: servicioId,
+      p_profesional_id: profesionalId,
+      p_nombre: nombre,
+      p_telefono: telefono,
+      p_email: email,
+      p_fecha: fecha,
+      p_hora: hora,
+      p_duracion: duracion,
+      p_monto_sena: montoSena,
+      p_origen: origen,
+      p_minutos_para_pagar: MINUTOS_PARA_PAGAR,
     });
 
     if (errorInsert) {
       console.error("Error guardando la reserva:", errorInsert);
       return error("No pudimos guardar tu reserva. Probá de nuevo en unos segundos.", 500);
     }
+    if (!guardada) return error("Ese horario se acaba de ocupar. Elegí otro.", 409);
 
     return NextResponse.json({ reservaId, montoSena });
   } catch (err) {

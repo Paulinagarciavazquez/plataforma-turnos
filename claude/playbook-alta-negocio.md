@@ -15,6 +15,7 @@ Cada negocio real nuevo es siempre una fila nueva en la tabla `negocios` de Supa
 1. **Facturación:** estar inscripta en el monotributo (ARCA) con una actividad que cubra este servicio y una categoría que alcance; confirmarlo con un contador. Cada cobro lleva su factura C (ARCA → Comprobantes en línea).
 2. **Plan de suscripción en Mercado Pago:** crear el plan "Agenda Estudio · Mantenimiento mensual" de $25.000 siguiendo la guía de arriba. Es el mismo link para todos los clientes.
 3. **Planes pagos, al cobrar el primer pago:** Vercel → Settings → Billing → Upgrade a Pro (≈ USD 20/mes; el plan gratis no permite uso comercial) y Supabase → Billing → Pro (≈ USD 25/mes; el gratis pausa el proyecto si no hay actividad y no tiene backups). Se pagan con tarjeta en dólares: sumar los impuestos argentinos a pagos en el exterior.
+4. **Resend Pro (≈ USD 20/mes, 50.000 mails) cuando haya movimiento:** el plan gratis permite 100 mails por día, compartidos entre todos los negocios, y cada turno genera 3 (aviso a la dueña, comprobante y recordatorio). Un solo salón con más de ~30 turnos por día ya lo supera, y los mails que pasan del límite no salen.
 
 ## Paso 1 — Firmar, cobrar el 50% y reunir información
 1. Completar y firmar los términos del servicio (con el CUIT de Paulina y los datos del cliente).

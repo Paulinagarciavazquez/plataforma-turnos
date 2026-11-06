@@ -37,6 +37,24 @@ function lunesDe(iso) {
   const desdeLunes = (f.getDay() + 6) % 7;
   return sumarDias(iso, -desdeLunes);
 }
+// Fechas que abarca lo que se está mirando: el día, la semana (de lunes a
+// domingo) o el mes. La Agenda pide a la base solo ese rango, así no
+// importa cuántos turnos acumule el negocio con el tiempo (Supabase devuelve
+// como máximo 1.000 filas por consulta).
+function rangoDe(vista, fechaRef) {
+  if (vista === "semana") {
+    const lunes = lunesDe(fechaRef);
+    return { desde: lunes, hasta: sumarDias(lunes, 6) };
+  }
+  if (vista === "mes") {
+    const f = aFecha(fechaRef);
+    return {
+      desde: aIso(new Date(f.getFullYear(), f.getMonth(), 1)),
+      hasta: aIso(new Date(f.getFullYear(), f.getMonth() + 1, 0)),
+    };
+  }
+  return { desde: fechaRef, hasta: fechaRef };
+}
 function diaSemana(iso) {
   return aFecha(iso).getDay();
 }
@@ -174,6 +192,9 @@ export default function Agenda({ negocio }) {
   const [motivoBloqueo, setMotivoBloqueo] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [aviso, setAviso] = useState("");
+  const [proximo, setProximo] = useState(null); // próximo turno con seña pagada, desde ahora
+
+  const { desde, hasta } = rangoDe(vista, fechaRef);
 
   useEffect(() => {
     async function cargarDatos() {
@@ -191,6 +212,8 @@ export default function Agenda({ negocio }) {
           .select("*, servicios(nombre), profesionales(nombre), sucursales(nombre)")
           .eq("negocio_id", negocio.id)
           .neq("estado", "cancelada")
+          .gte("fecha", desde)
+          .lte("fecha", hasta)
           .order("fecha", { ascending: true })
           .order("hora", { ascending: true }),
         supabase
@@ -198,8 +221,18 @@ export default function Agenda({ negocio }) {
           .select("id, nombre, sucursales(nombre)")
           .eq("negocio_id", negocio.id)
           .order("nombre"),
-        supabase.from("cierres_negocio").select("desde, hasta, motivo").eq("negocio_id", negocio.id),
-        supabase.from("ausencias_profesionales").select("profesional_id, fecha, motivo").eq("negocio_id", negocio.id),
+        supabase
+          .from("cierres_negocio")
+          .select("desde, hasta, motivo")
+          .eq("negocio_id", negocio.id)
+          .lte("desde", hasta)
+          .gte("hasta", desde),
+        supabase
+          .from("ausencias_profesionales")
+          .select("profesional_id, fecha, motivo")
+          .eq("negocio_id", negocio.id)
+          .gte("fecha", desde)
+          .lte("fecha", hasta),
       ]);
 
       setCierres(cierresData || []);
@@ -227,6 +260,30 @@ export default function Agenda({ negocio }) {
     }
 
     cargarDatos();
+  }, [negocio.id, recargar, desde, hasta]);
+
+  // "Próximo turno" no depende de lo que se esté mirando: se busca aparte,
+  // entre los próximos turnos con seña pagada desde hoy.
+  useEffect(() => {
+    async function cargarProximo() {
+      const ahora = new Date();
+      const hoyIso = aIso(ahora);
+      const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+      const { data } = await supabase
+        .from("reservas")
+        .select("fecha, hora, nombre_cliente, servicios(nombre)")
+        .eq("negocio_id", negocio.id)
+        .eq("estado", "confirmada")
+        .eq("bloqueo_manual", false)
+        .gte("fecha", hoyIso)
+        .order("fecha", { ascending: true })
+        .order("hora", { ascending: true })
+        .limit(50);
+      setProximo(
+        (data || []).find((r) => r.fecha > hoyIso || minutosDe(r.hora) >= ahoraMinutos) || null
+      );
+    }
+    cargarProximo();
   }, [negocio.id, recargar]);
 
   useEffect(() => {
@@ -275,28 +332,12 @@ export default function Agenda({ negocio }) {
   const filasCabecera = L > 1 ? 2 : 1;
   const anchoMinimo = vista === "dia" ? 110 : L > 1 ? 76 : 120;
 
-  // ---- Rango del resumen: el día, la semana o el mes que se está mirando ----
-  let desde = fechaRef;
-  let hasta = fechaRef;
-  if (vista === "semana") {
-    desde = lunes;
-    hasta = sumarDias(lunes, 6);
-  } else if (vista === "mes") {
-    const f = aFecha(fechaRef);
-    desde = aIso(new Date(f.getFullYear(), f.getMonth(), 1));
-    hasta = aIso(new Date(f.getFullYear(), f.getMonth() + 1, 0));
-  }
+  // ---- Resumen del rango que se está mirando (el día, la semana o el mes) ----
   const turnosRango = visibles.filter((r) => r.visual !== "bloqueo" && r.fecha >= desde && r.fecha <= hasta);
   const pagadosRango = turnosRango.filter((r) => r.visual === "confirmada");
   const senasRango = pagadosRango.reduce((suma, r) => suma + Number(r.monto_sena || 0), 0);
   const ahora = new Date();
-  const ahoraIso = aIso(ahora);
   const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
-  const proximo = visibles.find(
-    (r) =>
-      r.visual === "confirmada" &&
-      (r.fecha > ahoraIso || (r.fecha === ahoraIso && minutosDe(r.hora) >= ahoraMinutos))
-  );
   const nombreRango = vista === "dia" ? "del día" : vista === "semana" ? "de la semana" : "del mes";
 
   // ---- Títulos y navegación ----
