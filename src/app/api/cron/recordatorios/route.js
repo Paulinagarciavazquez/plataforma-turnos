@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { CAMPOS_RESERVA, mandarMailCliente, sumarEmailDelNegocio } from "@/lib/confirmarPago";
+import { renovarTurnosDeDemo } from "@/lib/demoAutomatica";
 
 // Tarea diaria (la dispara Vercel Cron, ver vercel.json): le manda a cada
 // cliente con turno confirmado para MAÑANA un mail de recordatorio, con el
@@ -74,5 +75,16 @@ export async function GET(request) {
   }
 
   console.log(`Recordatorios para ${fecha}: ${enviados} de ${reservas.length} enviados.`);
-  return NextResponse.json({ fecha, turnos: reservas.length, enviados });
+
+  // Segunda tarea del día (va acá para no sumar otra tarea programada):
+  // mantener la agenda de la demo con turnos de ejemplo. Si falla, no
+  // afecta a los recordatorios, que ya se mandaron.
+  let turnosDeEjemplo = 0;
+  try {
+    turnosDeEjemplo = await renovarTurnosDeDemo();
+  } catch (errorDemo) {
+    console.error("Error renovando los turnos de ejemplo de la demo:", errorDemo);
+  }
+
+  return NextResponse.json({ fecha, turnos: reservas.length, enviados, turnosDeEjemplo });
 }

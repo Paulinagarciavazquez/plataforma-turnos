@@ -155,3 +155,7 @@ Simulación contra la base real de la demo (fechas lejanas que el flujo no ofrec
 | Reservar con la base cargada | ✔ ~0,6 s por reserva | — |
 
 Límite a tener en cuenta con mucho movimiento: Resend gratis = 100 mails/día compartidos (3 mails por turno) → pasar a Resend Pro con el primer cliente con movimiento (sumado al Paso 0 del playbook). Pendiente menor: los bloqueos manuales del panel no pasan por `crear_reserva_segura` (choque posible solo si la dueña bloquea en el mismo segundo en que alguien reserva).
+
+## Parte 7 — Demo con agenda viva (06/11/2026)
+
+Para que el panel de la demo nunca se vea vacío al mostrárselo a un posible cliente: `src/lib/demoAutomatica.js` (`renovarTurnosDeDemo`), llamado todos los días desde la tarea de `api/cron/recordatorios` (después de los recordatorios, para no sumar otra tarea programada). Solo para negocios con `modo_demo = true`. Completa turnos de ejemplo desde hace 14 días hasta dentro de 13 (2 a 4 por profesional y día, con sus servicios reales, dentro del horario del día, sin pisar cierres, ausencias ni reservas reales), marcados con `origen = 'demo-auto'`, sin email (no mandan mails ni recordatorios), con seña "demo", y se borran solos a los 30 días. Primera carga: 180 turnos en 23 días, sin choques.
