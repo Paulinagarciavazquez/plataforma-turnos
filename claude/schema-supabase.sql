@@ -667,3 +667,25 @@ $$;
 -- Solo el servidor (service_role) puede llamarla.
 revoke all on function public.crear_reserva_segura(uuid, uuid, uuid, uuid, uuid, text, text, text, date, time, integer, numeric, text, integer) from public, anon, authenticated;
 grant execute on function public.crear_reserva_segura(uuid, uuid, uuid, uuid, uuid, text, text, text, date, time, integer, numeric, text, integer) to service_role;
+
+-- ============================================================
+-- MIGRACIÓN 08/11/2026: condiciones de reserva y política de privacidad
+-- ============================================================
+-- Datos con los que src/lib/textosLegales.js arma las páginas
+-- /condiciones y /privacidad de cada negocio (se editan en el panel,
+-- Configuración). Son públicos a propósito: aparecen en esas páginas.
+alter table public.negocios
+  add column if not exists horas_cancelacion integer not null default 24
+    check (horas_cancelacion between 0 and 168),
+  add column if not exists sena_cancelacion_a_tiempo text not null default 'reprograma'
+    check (sena_cancelacion_a_tiempo in ('reprograma', 'devuelve')),
+  add column if not exists condiciones_extra text,
+  add column if not exists responsable_nombre text,
+  add column if not exists responsable_cuit text,
+  add column if not exists responsable_domicilio text,
+  add column if not exists email_contacto text;
+
+-- Constancia de que la clienta aceptó las condiciones y la política de
+-- privacidad al reservar (la guarda api/reservar).
+alter table public.reservas
+  add column if not exists condiciones_aceptadas_en timestamptz;

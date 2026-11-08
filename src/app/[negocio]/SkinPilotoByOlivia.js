@@ -39,6 +39,11 @@ export default function SkinPilotoByOlivia({
   datosCliente,
   actualizarDatoCliente,
   confirmarReserva,
+  aceptaCondiciones,
+  setAceptaCondiciones,
+  textoCancelacion,
+  linkCondiciones,
+  linkPrivacidad,
   errorReserva,
   enviandoReserva,
   reservaConfirmada,
@@ -200,6 +205,10 @@ export default function SkinPilotoByOlivia({
         }
         .piel-by-olivia .bo-input:focus { outline: none; border-color: var(--bo-burgundy); }
         .piel-by-olivia .bo-error { font-size: 13px; color: #a1213a; margin: 0; }
+        .piel-by-olivia .bo-acepto { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--bo-ink); }
+        .piel-by-olivia .bo-acepto input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--bo-burgundy); }
+        .piel-by-olivia .bo-acepto a, .piel-by-olivia .bo-legales a { color: var(--bo-burgundy); text-decoration: underline; text-underline-offset: 2px; }
+        .piel-by-olivia .bo-legales { font-size: 12px; color: rgba(43,17,22,0.6); text-align: center; margin: 0; }
         .piel-by-olivia .bo-hero {
           position: relative; flex: 1; min-height: 560px; display: flex; flex-direction: column;
           align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 90px 24px;
@@ -490,6 +499,26 @@ export default function SkinPilotoByOlivia({
                 className="bo-input"
                 required
               />
+              <p className="bo-subtitulo" style={{ fontSize: 13, margin: 0 }}>{textoCancelacion}</p>
+              <label className="bo-acepto">
+                <input
+                  type="checkbox"
+                  checked={aceptaCondiciones}
+                  onChange={(e) => setAceptaCondiciones(e.target.checked)}
+                  required
+                />
+                <span>
+                  Acepto las{" "}
+                  <a href={linkCondiciones} target="_blank" rel="noopener">
+                    condiciones de reserva
+                  </a>{" "}
+                  y la{" "}
+                  <a href={linkPrivacidad} target="_blank" rel="noopener">
+                    política de privacidad
+                  </a>
+                  .
+                </span>
+              </label>
               {errorReserva && <p className="bo-error">{errorReserva}</p>}
               <button type="submit" disabled={enviandoReserva} className="bo-btn-primary">
                 {enviandoReserva ? "Confirmando..." : "Pagar seña y confirmar"}
@@ -615,8 +644,17 @@ export default function SkinPilotoByOlivia({
             )}
             <p className="bo-subtitulo" style={{ textAlign: "center", maxWidth: 400 }}>
               {reservaConfirmada.estadoPago === "aprobado"
-                ? "Si necesitás cancelar o reprogramar, contactanos con anticipación."
+                ? textoCancelacion
                 : "Si tenés dudas sobre el pago, contactanos y lo resolvemos juntos."}
+            </p>
+            <p className="bo-legales">
+              <a href={linkCondiciones} target="_blank" rel="noopener">
+                Condiciones de reserva
+              </a>
+              {" · "}
+              <a href={linkPrivacidad} target="_blank" rel="noopener">
+                Política de privacidad
+              </a>
             </p>
             <button onClick={volverAlInicio} className="bo-btn-outline">
               Volver al inicio

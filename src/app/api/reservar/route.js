@@ -62,6 +62,9 @@ export async function POST(request) {
     if (!nombre || !telefono || !email) {
       return error("Necesitamos tu nombre, un teléfono y un email para mandarte el comprobante.");
     }
+    if (cuerpo.aceptaCondiciones !== true) {
+      return error("Para reservar tenés que aceptar las condiciones de reserva y la política de privacidad.");
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return error("Revisá el email: no parece válido.");
     }
@@ -198,6 +201,15 @@ export async function POST(request) {
       return error("No pudimos guardar tu reserva. Probá de nuevo en unos segundos.", 500);
     }
     if (!guardada) return error("Ese horario se acaba de ocupar. Elegí otro.", 409);
+
+    // Constancia de que la clienta aceptó las condiciones y la política de
+    // privacidad vigentes (src/lib/textosLegales.js). Si falla, no frenamos
+    // la reserva: solo queda en el log.
+    const { error: errorConstancia } = await supabaseAdmin
+      .from("reservas")
+      .update({ condiciones_aceptadas_en: new Date().toISOString() })
+      .eq("id", reservaId);
+    if (errorConstancia) console.error("No se pudo guardar la aceptación de condiciones:", errorConstancia);
 
     return NextResponse.json({ reservaId, montoSena });
   } catch (err) {

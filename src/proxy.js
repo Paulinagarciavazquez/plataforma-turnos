@@ -85,8 +85,21 @@ export async function proxy(request) {
     return NextResponse.redirect(url);
   }
 
-  // Cualquier otra ruta del dominio muestra la página del negocio (cada
-  // dominio tiene una sola página pública: la de reservas).
+  // Las páginas legales del negocio ("/condiciones" y "/privacidad"). Si
+  // llegan con el slug adelante, se redirigen a la versión sin slug.
+  const legal = pathname.match(/^(?:\/[^/]+)?\/(condiciones|privacidad)\/?$/);
+  if (legal) {
+    if (pathname !== `/${legal[1]}`) {
+      const destino = request.nextUrl.clone();
+      destino.pathname = `/${legal[1]}`;
+      return NextResponse.redirect(destino);
+    }
+    const destino = request.nextUrl.clone();
+    destino.pathname = `/${slug}/${legal[1]}`;
+    return NextResponse.rewrite(destino);
+  }
+
+  // Cualquier otra ruta del dominio muestra la página de reservas del negocio.
   const url = request.nextUrl.clone();
   url.pathname = `/${slug}`;
   url.search = search;

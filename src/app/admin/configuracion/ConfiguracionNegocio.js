@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { HORAS_CANCELACION_POR_DEFECTO, OPCIONES_SENA_A_TIEMPO } from "@/lib/textosLegales";
 
 // El horario de atención se edita en "Horarios y bloqueos"
 // (src/app/admin/horarios/HorariosYBloqueos.js), no acá.
@@ -26,6 +27,20 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
     negocio.color_secundario || COLOR_POR_DEFECTO_SECUNDARIO
   );
   const [logoUrl, setLogoUrl] = useState(negocio.logo_url || "");
+
+  // Condiciones de reserva y política de privacidad: se muestran en la web
+  // de reservas (src/lib/textosLegales.js arma los textos con estos datos).
+  const [horasCancelacion, setHorasCancelacion] = useState(
+    String(negocio.horas_cancelacion ?? HORAS_CANCELACION_POR_DEFECTO)
+  );
+  const [senaATiempo, setSenaATiempo] = useState(
+    negocio.sena_cancelacion_a_tiempo === "devuelve" ? "devuelve" : "reprograma"
+  );
+  const [condicionesExtra, setCondicionesExtra] = useState(negocio.condiciones_extra || "");
+  const [responsableNombre, setResponsableNombre] = useState(negocio.responsable_nombre || "");
+  const [responsableCuit, setResponsableCuit] = useState(negocio.responsable_cuit || "");
+  const [responsableDomicilio, setResponsableDomicilio] = useState(negocio.responsable_domicilio || "");
+  const [emailContacto, setEmailContacto] = useState(negocio.email_contacto || "");
   // Vive en "negocios_pagos" (privada), no en "negocios" (pública): se
   // carga junto con los datos de Mercado Pago, más abajo.
   const [emailNotificaciones, setEmailNotificaciones] = useState("");
@@ -81,6 +96,11 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
       window.alert("Ingresá el monto o porcentaje de la seña.");
       return;
     }
+    const horas = Number(horasCancelacion);
+    if (!Number.isInteger(horas) || horas < 0 || horas > 168) {
+      window.alert("Las horas de aviso para cancelar tienen que ser un número entero entre 0 y 168.");
+      return;
+    }
     setGuardando(true);
     setMensaje(null);
 
@@ -91,6 +111,13 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
       color_primario: colorPrimario,
       color_secundario: colorSecundario,
       logo_url: logoUrl.trim() || null,
+      horas_cancelacion: horas,
+      sena_cancelacion_a_tiempo: senaATiempo,
+      condiciones_extra: condicionesExtra.trim() || null,
+      responsable_nombre: responsableNombre.trim() || null,
+      responsable_cuit: responsableCuit.trim() || null,
+      responsable_domicilio: responsableDomicilio.trim() || null,
+      email_contacto: emailContacto.trim() || null,
     };
 
     const [{ error: errorNegocio }, { error: errorEmail }] = await Promise.all([
@@ -292,6 +319,106 @@ export default function ConfiguracionNegocio({ negocio, actualizarNegocio }) {
             onChange={(e) => setMontoSena(e.target.value)}
             className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full"
           />
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Cancelaciones</h2>
+          <p className="text-sm text-[#6B6461] mb-3">
+            Se muestra en la web antes de pagar la seña, y la clienta lo acepta al reservar.
+          </p>
+          <label className="block text-sm mb-4">
+            Horas de aviso para cancelar o reprogramar
+            <input
+              type="number"
+              min="0"
+              max="168"
+              value={horasCancelacion}
+              onChange={(e) => setHorasCancelacion(e.target.value)}
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
+          <p className="text-sm mb-2">Si avisa con esa anticipación, la seña…</p>
+          <div className="flex flex-col gap-2 mb-4 text-sm">
+            {Object.entries(OPCIONES_SENA_A_TIEMPO).map(([valor, texto]) => (
+              <label key={valor} className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="senaATiempo"
+                  checked={senaATiempo === valor}
+                  onChange={() => setSenaATiempo(valor)}
+                />
+                {texto}
+              </label>
+            ))}
+          </div>
+          <p className="text-sm text-[#6B6461] mb-4">
+            Con menos aviso, o si no se presenta, la seña no se devuelve.
+          </p>
+          <label className="block text-sm">
+            Otras condiciones (opcional)
+            <textarea
+              value={condicionesExtra}
+              onChange={(e) => setCondicionesExtra(e.target.value)}
+              placeholder="Ej: Hay 10 minutos de tolerancia. Pasado ese tiempo el turno se puede reducir o reprogramar."
+              rows={3}
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-[#1E1B1A] mb-1">Datos legales</h2>
+          <p className="text-sm text-[#6B6461] mb-3">
+            Aparecen en la{" "}
+            <a href={`/${negocio.slug}/privacidad`} target="_blank" rel="noopener" className="underline underline-offset-2">
+              política de privacidad
+            </a>{" "}
+            y en las{" "}
+            <a href={`/${negocio.slug}/condiciones`} target="_blank" rel="noopener" className="underline underline-offset-2">
+              condiciones de reserva
+            </a>{" "}
+            de tu web. Son públicos.
+          </p>
+          <label className="block text-sm mb-4">
+            Titular o razón social
+            <input
+              type="text"
+              value={responsableNombre}
+              onChange={(e) => setResponsableNombre(e.target.value)}
+              placeholder="Ej: María Pérez"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
+          <label className="block text-sm mb-4">
+            CUIT
+            <input
+              type="text"
+              value={responsableCuit}
+              onChange={(e) => setResponsableCuit(e.target.value)}
+              placeholder="Ej: 27-12345678-9"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
+          <label className="block text-sm mb-4">
+            Domicilio
+            <input
+              type="text"
+              value={responsableDomicilio}
+              onChange={(e) => setResponsableDomicilio(e.target.value)}
+              placeholder="Ej: Av. San Martín 1234, Mendoza"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
+          <label className="block text-sm">
+            Email de contacto para clientas
+            <input
+              type="email"
+              value={emailContacto}
+              onChange={(e) => setEmailContacto(e.target.value)}
+              placeholder="hola@tunegocio.com"
+              className="border border-[#DCD5CE] bg-white rounded-xl px-3 py-2 min-h-11 text-base focus:border-[#1E1B1A] focus:outline-none transition w-full mt-1"
+            />
+          </label>
         </section>
 
         <section>

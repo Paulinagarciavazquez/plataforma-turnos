@@ -10,7 +10,16 @@ import {
   fechaCerrada,
 } from "../../lib/horarios";
 import { formatearFechaCorta } from "../../lib/formatearFecha";
+import { resumenCancelacion } from "../../lib/textosLegales";
 import SkinPilotoByOlivia from "./SkinPilotoByOlivia";
+
+// Link a las páginas legales del negocio: en un dominio propio la web vive en
+// "/" (ver src/proxy.js) y en los de la plataforma en "/slug".
+function rutaLegal(slug, pagina) {
+  const enDominioPropio =
+    typeof window !== "undefined" && !window.location.pathname.startsWith(`/${slug}`);
+  return enDominioPropio ? `/${pagina}` : `/${slug}/${pagina}`;
+}
 
 export default function ReservaNegocio({ params }) {
   const { negocio: slug } = use(params);
@@ -36,6 +45,7 @@ export default function ReservaNegocio({ params }) {
   const [cargandoHorarios, setCargandoHorarios] = useState(false);
 
   const [datosCliente, setDatosCliente] = useState({ nombre: "", telefono: "", email: "" });
+  const [aceptaCondiciones, setAceptaCondiciones] = useState(false);
   const [enviandoReserva, setEnviandoReserva] = useState(false);
   const [errorReserva, setErrorReserva] = useState(null);
   const [reservaConfirmada, setReservaConfirmada] = useState(null);
@@ -253,6 +263,10 @@ export default function ReservaNegocio({ params }) {
       setErrorReserva("Necesitamos tu nombre, un teléfono y un email para mandarte el comprobante.");
       return;
     }
+    if (!aceptaCondiciones) {
+      setErrorReserva("Para reservar tenés que aceptar las condiciones de reserva y la política de privacidad.");
+      return;
+    }
 
     setEnviandoReserva(true);
     setErrorReserva(null);
@@ -275,6 +289,7 @@ export default function ReservaNegocio({ params }) {
           nombre,
           telefono,
           email,
+          aceptaCondiciones,
         }),
       });
       const datosReserva = await respuestaReserva.json();
@@ -365,6 +380,7 @@ export default function ReservaNegocio({ params }) {
       hora: null,
     });
     setDatosCliente({ nombre: "", telefono: "", email: "" });
+    setAceptaCondiciones(false);
     setErrorReserva(null);
     setReservaConfirmada(null);
     setPantallaActual("landing");
@@ -485,6 +501,9 @@ export default function ReservaNegocio({ params }) {
   const colorPrimario = datosNegocio.color_primario || "#D9A79C";
   const colorSecundario = datosNegocio.color_secundario || "#3A2E2A";
   const formatearPrecio = (precio) => `$${Number(precio).toLocaleString("es-AR")}`;
+  const textoCancelacion = resumenCancelacion(datosNegocio);
+  const linkCondiciones = rutaLegal(slug, "condiciones");
+  const linkPrivacidad = rutaLegal(slug, "privacidad");
 
   // Si el negocio usa sucursales, un servicio solo se ofrece en la sucursal
   // elegida cuando: no tiene ningún profesional vinculado todavía (no lo
@@ -556,6 +575,11 @@ export default function ReservaNegocio({ params }) {
         datosCliente={datosCliente}
         actualizarDatoCliente={actualizarDatoCliente}
         confirmarReserva={confirmarReserva}
+        aceptaCondiciones={aceptaCondiciones}
+        setAceptaCondiciones={setAceptaCondiciones}
+        textoCancelacion={textoCancelacion}
+        linkCondiciones={linkCondiciones}
+        linkPrivacidad={linkPrivacidad}
         errorReserva={errorReserva}
         enviandoReserva={enviandoReserva}
         reservaConfirmada={reservaConfirmada}
@@ -839,6 +863,29 @@ export default function ReservaNegocio({ params }) {
               required
             />
 
+            <p className="text-xs text-gray-500">{textoCancelacion}</p>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={aceptaCondiciones}
+                onChange={(e) => setAceptaCondiciones(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0"
+                style={{ accentColor: colorPrimario }}
+                required
+              />
+              <span>
+                Acepto las{" "}
+                <a href={linkCondiciones} target="_blank" rel="noopener" className="underline underline-offset-2">
+                  condiciones de reserva
+                </a>{" "}
+                y la{" "}
+                <a href={linkPrivacidad} target="_blank" rel="noopener" className="underline underline-offset-2">
+                  política de privacidad
+                </a>
+                .
+              </span>
+            </label>
+
             {errorReserva && <p className="text-sm text-red-600">{errorReserva}</p>}
 
             <button
@@ -970,8 +1017,17 @@ export default function ReservaNegocio({ params }) {
 
           <p className="mt-5 max-w-sm px-6 text-center text-xs text-gray-500">
             {reservaConfirmada.estadoPago === "aprobado"
-              ? "Si necesitás cancelar o reprogramar, contactanos con anticipación."
+              ? textoCancelacion
               : "Si tenés dudas sobre el pago, contactanos y lo resolvemos juntos."}
+          </p>
+          <p className="mt-2 max-w-sm px-6 text-center text-xs text-gray-500">
+            <a href={linkCondiciones} target="_blank" rel="noopener" className="underline underline-offset-2">
+              Condiciones de reserva
+            </a>
+            {" · "}
+            <a href={linkPrivacidad} target="_blank" rel="noopener" className="underline underline-offset-2">
+              Política de privacidad
+            </a>
           </p>
 
           <button
